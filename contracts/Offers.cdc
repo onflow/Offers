@@ -65,6 +65,10 @@ pub contract Offers {
     /// The public location for a OpenOffers link.
     pub let OpenOffersPublicPath: PublicPath
 
+    /// FungibleTokenProviderVaultPath
+    /// The private location for FungibleToken provider vault.
+    pub let FungibleTokenProviderVaultPath: PrivatePath
+
     /// OfferCut
     /// A struct representing a recipient that must be sent a certain amount
     /// of the payment when offeree accepts the offer.
@@ -384,10 +388,10 @@ pub contract Offers {
         pub fun removeOffer(offerId: UInt64)
     }
 
-    // OfferManagerPublic
+    // OpenOffersPublic
     // An interface providing a useful public interface to interact with OfferManager.
     //
-    pub resource interface OfferManagerPublic {
+    pub resource interface OpenOffersPublic {
 
         // getOfferIds
         // Get a list of Offer ids created by the offeror and hold by the OfferManager resource.
@@ -405,8 +409,8 @@ pub contract Offers {
         pub fun cleanup(offerId: UInt64)
     }
 
-    /// Definition of the APIs offered by the OfferManager resource and OfferManagerPublic.
-    pub resource OpenOffers: OfferManager, OfferManagerPublic {
+    /// Definition of the APIs offered by the OfferManager resource and OpenOffersPublic.
+    pub resource OpenOffers: OfferManager, OpenOffersPublic {
         /// The dictionary of Offers uuids to Offer resources.
         access(contract) var offers: @{UInt64: Offer}
 
@@ -523,5 +527,6 @@ pub contract Offers {
     init () {
         self.OpenOffersStoragePath = /storage/OpenOffers
         self.OpenOffersPublicPath = /public/OpenOffers
+        self.FungibleTokenProviderVaultPath = /private/OffersFungibleTokenProviderVault
     }
 }
