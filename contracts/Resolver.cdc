@@ -12,7 +12,7 @@ pub contract Resolver {
     // which is used within the Resolver resource for offer acceptance validation
     pub resource interface ResolverPublic {
         pub fun checkOfferResolver(
-         item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
+         item: &{NonFungibleToken.NFT, MetadataViews.Resolver},
          offerParamsString: {String:String},
          offerParamsUInt64: {String:UInt64},
          offerParamsUFix64: {String:UFix64}): Bool
@@ -25,7 +25,7 @@ pub contract Resolver {
         // Holds the validation rules for resolver each type of supported ResolverType
         // Function returns TRUE if the provided nft item passes the criteria for exchange
         pub fun checkOfferResolver(
-         item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
+         item: &AnyResource{NonFungibleToken.NFT, MetadataViews.Resolver},
          offerParamsString: {String:String},
          offerParamsUInt64: {String:UInt64},
          offerParamsUFix64: {String:UFix64}): Bool {
