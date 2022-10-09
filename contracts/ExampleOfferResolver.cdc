@@ -1,4 +1,6 @@
 import Resolver from "./Resolver.cdc"
+import NonFungibleToken from "./utility/NonFungibleToken.cdc"
+import MetadataViews from "./utility/MetadataViews.cdc"
 
 pub contract ExampleOfferResolver {
 
@@ -10,7 +12,7 @@ pub contract ExampleOfferResolver {
         // Holds the validation rules for resolver each type of supported ResolverType
         // Function returns TRUE if the provided nft item passes the criteria for exchange
         pub fun checkOfferResolver(
-         item: &AnyResource{NonFungibleToken.NFT, MetadataViews.Resolver},
+         item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
          offerParamsString: {String:String},
          offerParamsUInt64: {String:UInt64},
          offerParamsUFix64: {String:UFix64}): Bool {

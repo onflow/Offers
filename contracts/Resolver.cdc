@@ -12,7 +12,7 @@ pub contract Resolver {
     // which is used within the Resolver resource for offer acceptance validation
     pub resource interface ResolverPublic {
         pub fun checkOfferResolver(
-         item: &{NonFungibleToken.NFT, MetadataViews.Resolver},
+         item: &{NonFungibleToken.INFT, MetadataViews.Resolver},
          offerParamsString: {String:String},
          offerParamsUInt64: {String:UInt64},
          offerParamsUFix64: {String:UFix64}): Bool

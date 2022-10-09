@@ -19,10 +19,10 @@ import Resolver from "./Resolver.cdc"
 pub contract Offers {
 
     /// Emitted when the `OpenOffers` resoruce get destroyed.
-    emit OpenOffersDestroyed(openOffersResourceID: UInt64)
+    pub event OpenOffersDestroyed(openOffersResourceID: UInt64)
 
     /// Emitted when the `OpenOffers` resoruce get created.
-    emit OpenOffersInitialized(OpenOffersResourceId: UInt64)
+    pub event OpenOffersInitialized(OpenOffersResourceId: UInt64)
 
     // OfferAvailable
     // Emitted when the offer gets created by the offeror
@@ -170,7 +170,7 @@ pub contract Offers {
         // This will accept the offer if provided with the NFT id that matches the Offer
         //
         pub fun accept(
-            item: @{NonFungibleToken.NFT, MetadataViews.Resolver},
+            item: @{NonFungibleToken.INFT, MetadataViews.Resolver},
             receiverCapability: Capability<&{FungibleToken.Receiver}>,
         )
         // getDetails
@@ -195,7 +195,7 @@ pub contract Offers {
             nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
-            offerCuts: [OfferCuts],
+            offerCuts: [Offers.OfferCut],
             offerParamsString: {String:String},
             offerParamsUFix64: {String:UFix64},
             offerParamsUInt64: {String:UInt64},
@@ -216,7 +216,7 @@ pub contract Offers {
             self.details = OfferDetails(
                 offerId: self.uuid,
                 nftType: nftType,
-                maximumOfferAmount: amount,
+                maximumOfferAmount: maximumOfferAmount,
                 offerCuts: offerCuts,
                 offerParamsString: offerParamsString,
                 offerParamsUFix64: offerParamsUFix64,
@@ -232,7 +232,7 @@ pub contract Offers {
         // - Provided with a NFT matching the NFT Type within the Offer details.
         //
         pub fun accept(
-            item: @{NonFungibleToken.NFT, MetadataViews.Resolver},
+            item: @AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
             receiverCapability: Capability<&{FungibleToken.Receiver}>,
         ) {
 
@@ -246,7 +246,7 @@ pub contract Offers {
             let nftReceiverCap = self.nftReceiverCapability.borrow() ?? panic("Failed to borrow nftReceiverCapibility")
             let providerVaultCap = self.providerVaultCapability.borrow() ?? panic("Failed to borrow providerVaultCapability")
             let hasMeetingResolverCriteria = resolverCap.checkOfferResolver(
-                item: &item as &{NonFungibleToken.NFT, MetadataViews.Resolver},
+                item: &item as &{NonFungibleToken.INFT, MetadataViews.Resolver},
                 offerParamsString: self.details.offerParamsString,
                 offerParamsUInt64: self.details.offerParamsUInt64,
                 offerParamsUFix64: self.details.offerParamsUFix64,
@@ -265,17 +265,17 @@ pub contract Offers {
                 }
             }
 
-            let nft = item.borrow() ?? panic("Failed to borrow item")
             let remainingAmount = toBePaidVault.balance
+            let nftId = item.id
             // Check whether the NFT supports the royalties metadataView, If yes then honour the royalties.
-            if nft.borrow()!.getViews().contains(Type<MetadataViews.Royalties>()) {
-                let royaltiesRef = nft.resolveView(Type<MetadataViews.Royalties>())?? panic("Unable to retrieve the royalties")
+            if item.getViews().contains(Type<MetadataViews.Royalties>()) {
+                let royaltiesRef = item.resolveView(Type<MetadataViews.Royalties>())?? panic("Unable to retrieve the royalties")
                 let royalties = (royaltiesRef as! MetadataViews.Royalties).getRoyalties()
                 for royalty in royalties {
-                    if royalty.receiver.borrow() {
+                    if let beneficiary = royalty.receiver.borrow() {
                         let royaltyPayment <- toBePaidVault.withdraw(amount: royalty.cut * remainingAmount)
                         // Chances of failing the deposit is high as its type is different from the payment vault type
-                        royalty.receiver.deposit(royaltyPayment)
+                        beneficiary.deposit(from: <- royaltyPayment)
                     }
                 }
             }
@@ -284,7 +284,7 @@ pub contract Offers {
             // Update the storage and mark the offer purchased.
             self.details.setToPurchased()
             // Desposit the asset to the offeror.
-            nftReceiverCap.deposit(token: <- item as! @NonFungibleToken.NFT)
+            nftReceiverCap.deposit(token: <- (item as! @NonFungibleToken.NFT))
 
             emit OfferCompleted(
                 purchased: self.details.purchased,
@@ -292,8 +292,7 @@ pub contract Offers {
                 offerAddress: self.nftReceiverCapability.address,
                 offerId: self.details.offerId,
                 nftType: self.details.nftType,
-                offerAmount: self.details.maximumOfferAmount,
-                royalties: self.getRoyaltyInfo(),
+                maximumOfferAmount: self.details.maximumOfferAmount,
                 offerType: self.details.offerParamsString["_type"] ?? "unknown",
                 offerParamsString: self.details.offerParamsString,
                 offerParamsUFix64: self.details.offerParamsUFix64,
@@ -313,24 +312,24 @@ pub contract Offers {
         // getExpectedPaymentToOfferee
         // Return the amount of fungible tokens will be received by the offeree
         //
-        pub fun getExpectedPaymentToOfferee(item: &{NonFungibleToken.NFT, MetadataViews.Resolver}): UFix64 {
-            var totalCutPayment: UFix64
-            var totalRoyaltyPayment: UFix64
+        pub fun getExpectedPaymentToOfferee(item: &{NonFungibleToken.INFT, MetadataViews.Resolver}): UFix64 {
+            var totalCutPayment: UFix64 = 0.0
+            var totalRoyaltyPayment: UFix64 = 0.0
             for cut in self.details.offerCuts {
                 if let receiver = cut.receiver.borrow() {
                     totalCutPayment = totalCutPayment + cut.amount
                 }
             }
 
-            let nft = item.borrow() ?? panic("Failed to borrow item")
             let remainingAmount = self.details.maximumOfferAmount - totalCutPayment
             // Check whether the NFT supports the royalties metadataView, If yes then honour the royalties.
-            if nft.borrow()!.getViews().contains(Type<MetadataViews.Royalties>()) {
-                let royaltiesRef = nft.resolveView(Type<MetadataViews.Royalties>())?? panic("Unable to retrieve the royalties")
-                let royalties = (royaltiesRef as! MetadataViews.Royalties).getRoyalties()
-                for royalty in royalties {
-                    if royalty.receiver.borrow() {
-                        totalRoyaltyPayment = totalRoyaltyPayment + royalty.cut * remainingAmount
+            if item.getViews().contains(Type<MetadataViews.Royalties>()) {
+                if let royaltiesRef = item.resolveView(Type<MetadataViews.Royalties>()) {
+                    let royalties = (royaltiesRef as! MetadataViews.Royalties).getRoyalties()
+                    for royalty in royalties {
+                        if let recev = royalty.receiver.borrow() {
+                            totalRoyaltyPayment = totalRoyaltyPayment + royalty.cut * remainingAmount
+                        }
                     }
                 }
             }
@@ -375,7 +374,7 @@ pub contract Offers {
             nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
-            offerCuts: [OfferCuts],
+            offerCuts: [Offers.OfferCut],
             offerParamsString: {String:String},
             offerParamsUFix64: {String:UFix64},
             offerParamsUInt64: {String:UInt64},
@@ -422,7 +421,7 @@ pub contract Offers {
             nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
-            offerCuts: [OfferCuts],
+            offerCuts: [Offers.OfferCut],
             offerParamsString: {String:String},
             offerParamsUFix64: {String:UFix64},
             offerParamsUInt64: {String:UInt64},
@@ -432,7 +431,7 @@ pub contract Offers {
                 providerVaultCapability: providerVaultCapability,
                 nftReceiverCapability: nftReceiverCapability,
                 nftType: nftType,
-                maximumOfferAmount: amount,
+                maximumOfferAmount: maximumOfferAmount,
                 offerCuts: offerCuts,
                 offerParamsString: offerParamsString,
                 offerParamsUFix64: offerParamsUFix64,
@@ -521,7 +520,7 @@ pub contract Offers {
     // Make creating an OpenOffers publicly accessible.
     //
     pub fun createOpenOffers(): @OpenOffers {
-        return <-create DapperOffer()
+        return <-create OpenOffers()
     }
 
     init () {
@@ -530,3 +529,4 @@ pub contract Offers {
         self.FungibleTokenProviderVaultPath = /private/OffersFungibleTokenProviderVault
     }
 }
+ 

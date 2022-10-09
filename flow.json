@@ -6,7 +6,26 @@
 		}
 	},
 	"contracts": {
-		
+		"FungibleToken": {
+			"source": "./contracts/utility/FungibleToken.cdc",
+			"aliases": {
+				"mainnet": "0xf233dcee88fe0abe",
+				"testnet": "0x9a0766d93b6608b7",
+				"emulator": "0xee82856bf20e2aa6"
+			}
+		},
+		"NonFungibleToken": {
+            "source": "./contracts/utility/NonFungibleToken.cdc",
+            "aliases": {
+                "emulator": "0xf8d6e0586b0a20c7",
+                "testnet": "0x631e88ae7f1d7c20"
+            }
+        },
+		"MetadataViews": "./contracts/utility/MetadataViews.cdc",
+		"ExampleNFT": "./contracts/utility/ExampleNFT.cdc",
+		"ExampleOfferResolver": "./contracts/ExampleOfferResolver.cdc",
+		"Offers": "./contracts/Offers.cdc",
+		"Resolver": "./contracts/Resolver.cdc"
 	},
 	"networks": {
 		"emulator": "127.0.0.1:3569",
@@ -19,5 +38,9 @@
 			"key": ""
 		}
 	},
-	"deployments": {}
+	"deployments": {
+		"emulator" : {
+			"emulator-account": ["NonFungibleToken", "FungibleToken", "MetadataViews", "Resolver", "ExampleOfferResolver", "Offers"]
+		}
+	}
 }
