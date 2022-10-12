@@ -7,7 +7,7 @@ transaction {
     prepare(acct: AuthAccount) {
 
         // If the account doesn't already have a OfferResolver
-        if acct.borrow<&Resolver.OfferResolver>(from: ExampleOfferResolver.ExampleOfferResolverStoragePath) == nil {
+        if acct.borrow<&ExampleOfferResolver.OfferResolver{Resolver.ResolverPublic}>(from: ExampleOfferResolver.ExampleOfferResolverStoragePath) == nil {
 
             // Create a new empty OfferResolver
             let offerResolver <- ExampleOfferResolver.createOfferResolver() as! @ExampleOfferResolver.OfferResolver
@@ -16,7 +16,7 @@ transaction {
             acct.save(<-offerResolver, to: ExampleOfferResolver.ExampleOfferResolverStoragePath)
 
             // create a public capability for the OpenOffers
-            acct.link<&{Resolver.OfferResolver}>(Resolver.getResolverPublicPath(), target: ExampleOfferResolver.ExampleOfferResolverStoragePath)
+            acct.link<&ExampleOfferResolver.OfferResolver{Resolver.ResolverPublic}>(Resolver.getResolverPublicPath(), target: ExampleOfferResolver.ExampleOfferResolverStoragePath)
         }
     }
 }

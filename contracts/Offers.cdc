@@ -207,7 +207,7 @@ pub contract Offers {
                 providerVaultCapability.check(): "Can not borrow providerVaultCapability"
                 resolverCapability.check(): "Can not borrow resolverCapability"
             }
-            assert(providerVaultCapability.borrow()!.balance > maximumOfferAmount, message: "Insufficent balance ins provided vault")
+            assert(providerVaultCapability.borrow()!.balance > maximumOfferAmount, message: "Insufficent balance in provided vault")
             
             self.providerVaultCapability = providerVaultCapability
             self.nftReceiverCapability = nftReceiverCapability
