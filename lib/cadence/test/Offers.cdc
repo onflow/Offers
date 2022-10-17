@@ -250,11 +250,6 @@ pub fun testProposeOffer() {
     //assert(offerDetails.maximumOfferAmount == 150.0, message: "Incorrect Offer set")
 }
 
-pub fun testFailToGetArrayFromScript() {
-    let offeree = accounts["offeree"]!
-    getOfferIds(offeree.address)
-}
-
 
 
 
@@ -293,14 +288,13 @@ pub fun txExecutor(_ txCode: String, _ signers: [Test.Account], _ arguments: [An
             let panicErrMessage = err.message.slice(from: 73, upTo: 73 + expectedErrorMessage.length)
             let assertionErrMessage = err.message.slice(from: 84, upTo: 84 + expectedErrorMessage.length)
             let preConditionErrMessage = err.message.slice(from: 88, upTo: 88 + expectedErrorMessage.length)
-            let endMessage = err.message.slice(from: err.message.length - expectedErrorMessage.length, upTo: err.message.length)
             let hasEmittedCorrectMessage = panicErrMessage == expectedErrorMessage ? true : (assertionErrMessage == expectedErrorMessage ? true : preConditionErrMessage == expectedErrorMessage)
             let failureMessage = "Expecting - "
                 .concat(expectedErrorMessage)
                 .concat("\n")
                 .concat("But received - ")
                 .concat(err.message)
-            assert(hasEmittedCorrectMessage, message: endMessage)
+            assert(hasEmittedCorrectMessage, message: failureMessage)
             return true
         }
         panic(err.message)
