@@ -18,5 +18,12 @@ transaction {
             // create a public capability for the OpenOffers
             acct.link<&Offers.OpenOffers{Offers.OpenOffersPublic}>(Offers.OpenOffersPublicPath, target: Offers.OpenOffersStoragePath)
         }
+
+        let cap = acct.getCapability<&Offers.OpenOffers{Offers.OpenOffersPublic}>(
+            Offers.OpenOffersPublicPath
+        )
+
+        assert(cap.check(), message: "Public capability doesn't exists")
     }
+
 }

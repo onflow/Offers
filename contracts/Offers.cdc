@@ -133,10 +133,6 @@ pub contract Offers {
             offerParamsUInt64: {String:UInt64},
             paymentVaultType: Type,
         ) {
-            pre {
-                // Validate the length of the offer cuts
-                offerCuts.length > 0: "Offer at least have one offer cut recipent"
-            }
             self.offerId = offerId
             self.nftType = nftType
             self.maximumOfferAmount = maximumOfferAmount
@@ -207,7 +203,7 @@ pub contract Offers {
                 providerVaultCapability.check(): "Can not borrow providerVaultCapability"
                 resolverCapability.check(): "Can not borrow resolverCapability"
             }
-            assert(providerVaultCapability.borrow()!.balance > maximumOfferAmount, message: "Insufficent balance in provided vault")
+            assert(providerVaultCapability.borrow()!.balance >= maximumOfferAmount, message: "Insufficent balance in provided vault")
             
             self.providerVaultCapability = providerVaultCapability
             self.nftReceiverCapability = nftReceiverCapability
