@@ -2,7 +2,7 @@ import Offers from "../../../../../contracts/Offers.cdc"
 
 // This script returns the details for a Offer within a OpenOffer
 
-pub fun main(account: Address, offerId: UInt64): (UInt64, UFix64, Type) {
+pub fun main(account: Address, offerId: UInt64): UFix64 {
     let openOffersRef = getAccount(account)
         .getCapability<&Offers.OpenOffers{Offers.OpenOffersPublic}>(
             Offers.OpenOffersPublicPath
@@ -14,5 +14,5 @@ pub fun main(account: Address, offerId: UInt64): (UInt64, UFix64, Type) {
         ?? panic("No offer with that ID")
     
     let details = offer.getDetails()
-    return (details.offerId, details.maximumOfferAmount, details.nftType)
+    return details.maximumOfferAmount
 }

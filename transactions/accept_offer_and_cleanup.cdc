@@ -2,7 +2,6 @@ import Offers from "../contracts/Offers.cdc"
 import FungibleToken from "../contracts/utility/FungibleToken.cdc"
 import NonFungibleToken from "../contracts/utility/NonFungibleToken.cdc"
 import ExampleToken from "../contracts/utility/ExampleToken.cdc"
-import ExampleNFT from "../contracts/utility/ExampleNFT.cdc"
 
 transaction(nftId: UInt64, offerId: UInt64, openOffersHolder: Address) {
 
@@ -35,8 +34,9 @@ transaction(nftId: UInt64, offerId: UInt64, openOffersHolder: Address) {
 
     execute {
         self.offer.accept(
-            item: <- (self.nftCollection.withdraw(withdrawID: nftId) as! @ExampleNFT.NFT),
+            item: <- self.nftCollection.withdraw(withdrawID: nftId) as! @ExampleNFT.NFT,
             receiverCapability: self.receiverCapability
-        )
+        )!
+        self.openOfferPublic.cleanup(offerId: offerId)
     }
 }

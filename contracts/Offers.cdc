@@ -173,6 +173,11 @@ pub contract Offers {
         // Return Offer details
         //
         pub fun getDetails(): OfferDetails
+
+        // getExpectedPaymentToOfferee
+        // Return the amount of fungible tokens will be received by the offeree
+        //
+        pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64
     }
 
 
@@ -270,7 +275,7 @@ pub contract Offers {
                 for royalty in royalties {
                     if let beneficiary = royalty.receiver.borrow() {
                         let royaltyPayment <- toBePaidVault.withdraw(amount: royalty.cut * remainingAmount)
-                        // Chances of failing the deposit is high as its type is different from the payment vault type
+                        // Chances of failing the deposit is high if its type is different from the payment vault type
                         beneficiary.deposit(from: <- royaltyPayment)
                     }
                 }
@@ -308,7 +313,7 @@ pub contract Offers {
         // getExpectedPaymentToOfferee
         // Return the amount of fungible tokens will be received by the offeree
         //
-        pub fun getExpectedPaymentToOfferee(item: &{NonFungibleToken.INFT, MetadataViews.Resolver}): UFix64 {
+        pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64 {
             var totalCutPayment: UFix64 = 0.0
             var totalRoyaltyPayment: UFix64 = 0.0
             for cut in self.details.offerCuts {

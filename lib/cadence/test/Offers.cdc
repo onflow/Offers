@@ -69,6 +69,12 @@ pub fun setup() {
     let nonFungibleToken = blockchain.createAccount()
     let offeree = blockchain.createAccount()
     let token = blockchain.createAccount()
+    let cutReceiver1 = blockchain.createAccount()
+    let cutReceiver2 = blockchain.createAccount()
+    let offerAcceptor = blockchain.createAccount()
+    let royaltyReceiver1 = blockchain.createAccount()
+    let royaltyReceiver2 = blockchain.createAccount()
+
 
     accounts = {
         "FungibleToken": fungibleToken,
@@ -79,7 +85,12 @@ pub fun setup() {
         "Resolver": resolver,
         "ExampleOfferResolver": resolver,
         "Offers": offers,
-        "offeree": offeree
+        "offeree": offeree,
+        "offerAcceptor": offerAcceptor,
+        "royaltyReceiver1": royaltyReceiver1,
+        "royaltyReceiver2": royaltyReceiver2,
+        "cutReceiver1": cutReceiver1,
+        "cutReceiver2": cutReceiver2
     }
 
 
@@ -147,6 +158,7 @@ pub fun testFailToProposeOfferBecauseAccountDoesNotHaveOpenOffersResource() {
         fakeOfferee.address,
         10.0,
         [],
+        [],
         {},
         fakeOfferee.address,
         "Given account does not possess OfferManager resource"
@@ -162,6 +174,7 @@ pub fun testFailToProposeOfferBecauseAccountDoesNotHaveNFTReceiverCapability() {
         offeree,
         offeree.address,
         10.0,
+        [],
         [],
         {},
         offeree.address,
@@ -179,6 +192,7 @@ pub fun testFailToProposeOfferBecauseAccountDoesNotHaveResolverCapability() {
         offeree,
         offeree.address,
         10.0,
+        [],
         [],
         {},
         offeree.address,
@@ -204,6 +218,7 @@ pub fun testFailToProposeOfferBecauseMaximumOfferAmountIsZero() {
         offeree.address,
         0.0,
         [],
+        [],
         {},
         offeree.address,
         "Offer amount can not be zero"
@@ -212,17 +227,13 @@ pub fun testFailToProposeOfferBecauseMaximumOfferAmountIsZero() {
 
 // pub fun testFailToProposeOfferBecauseInsufficientBalance() {
 //     let offeree = accounts["offeree"]!
-//     // Create fungible token vaults for cuts receiver
-//     // let cutBeneficiary1 = (blockchain.createAccount()).address
-//     // let cutBeneficiary2 = (blockchain.createAccount()).address
-//     // let cuts = getOfferCuts([cutBeneficiary1, cutBeneficiary2], [10.0, 20.0])
 //     // Execute proposeOffer transaction
 //     executeProposeOfferTx(
 //         offeree,
 //         offeree.address,
 //         1500.0,
-//         // Did not add cuts because of incompetent cadence test framwork
 //         [],
+//         [], 
 //         {"_type": "NFT", "typeId": "Type<@ExampleNFT.NFT>()"},
 //         offeree.address,
 //         "Insufficent balance in provided vault"
@@ -231,30 +242,82 @@ pub fun testFailToProposeOfferBecauseMaximumOfferAmountIsZero() {
 
 pub fun testProposeOffer() {
     let offeree = accounts["offeree"]!
+    let cutReceiver1 = accounts["cutReceiver1"]!
+    let cutReceiver2 = accounts["cutReceiver2"]!
+
+    // Setup the receiver of fungible token
+    executeSetupVaultAndMintTokensTx(cutReceiver1, 0.0)
+    executeSetupVaultAndMintTokensTx(cutReceiver2, 0.0)
     // Execute proposeOffer transaction
     executeProposeOfferTx(
         offeree,
         offeree.address,
         150.0,
-        // Did not add cuts because of incompetent cadence test framwork
-        [],
-        {"_type": "NFT", "typeId": "Type<@ExampleNFT.NFT>()"},
+        [cutReceiver1.address, cutReceiver2.address],
+        [12.0, 13.0],
+        {"resolver": "0", "nftId": "0"},
         offeree.address,
         nil
     )
 
     // Assertion
     let offerId = getOfferId(offeree.address, 0)
-    //let offerDetails = getOfferDetails(offeree.address, offerId)
+    let maximumOfferAmount = getOfferDetails(offeree.address, offerId)
     assert(getNoOfOfferCreated(offeree.address) == 1, message: "Incorrect creation of offer")
-    //assert(offerDetails.maximumOfferAmount == 150.0, message: "Incorrect Offer set")
+    assert(maximumOfferAmount == 150.0, message: "Incorrect Offer set")
 }
 
+pub fun testAcceptTheOffer() {
+    let acceptor = accounts["offerAcceptor"]!
+    let offeree = accounts["offeree"]!
+    let royaltyReceiver1 = accounts["royaltyReceiver1"]!
+    let royaltyReceiver2 = accounts["royaltyReceiver2"]!
+    let cutReceiver1 = accounts["cutReceiver1"]!
+    let cutReceiver2 = accounts["cutReceiver2"]!
+    let minter = accounts["ExampleNFT"]!
+    let offerId = getOfferId(offeree.address, 0)
 
+    // Step 1: Setup the receiver of fungible token
+    executeSetupVaultAndMintTokensTx(acceptor, 0.0)
+    // Step 2: Setup the NFT collection for offer acceptor
+    executeSetupExampleNFTAccount(acceptor)
+    // Step 3: Mint the NFT and assign the royalties.
+    // Step 3a: Setup royalties account
+    executeSetupVaultAndSetupRoyaltyReceiver(royaltyReceiver1, /storage/exampleTokenVault)
+    executeSetupVaultAndSetupRoyaltyReceiver(royaltyReceiver2, /storage/exampleTokenVault)
+    // Step 3b: Mint NFT
+    executeMintNFTTx(
+        minter,
+        acceptor.address,
+        "BasketBall_1",
+        "This is first basketball",
+        "BASKETBALL",
+        [0.1, 0.2],
+        ["Artist", "Creator"],
+        [royaltyReceiver1.address, royaltyReceiver2.address],
+        nil
+    )
 
+    let expectedPaymentToOffree = getExpectedPaymentToOfferee(offerId, offeree.address, acceptor.address, 0, /public/exampleNFTCollection)
 
+    assert(expectedPaymentToOffree == 87.5, message: "Incorrect balance send to acceptor \n Expected 87.5 but got - ".concat(expectedPaymentToOffree.toString()))
 
+    // Execute accept transaction
+    executeOfferAcceptTx(
+        acceptor,
+        0,
+        offerId,
+        offeree.address,
+        nil
+    )
 
+    assert(getBalance(royaltyReceiver1.address) == 12.5, message: "Incorrect balance send to royalty receiver 1 \n Expected 12.5 but got - ".concat((getBalance(royaltyReceiver1.address)).toString()))
+    assert(getBalance(royaltyReceiver2.address) == 25.0, message: "Incorrect balance send to royalty receiver 2 \n Expected 25.0 but got - ".concat((getBalance(royaltyReceiver2.address)).toString()))
+    assert(getBalance(acceptor.address) == 87.5, message: "Incorrect balance send to acceptor \n Expected 87.5 but got - ".concat((getBalance(acceptor.address)).toString()))
+    assert(getBalance(cutReceiver1.address) == 12.0, message: "Incorrect balance send to cut receiver 1 \n Expected 12.0 but got - ".concat((getBalance(cutReceiver1.address)).toString()))
+    assert(getBalance(cutReceiver2.address) == 13.0, message: "Incorrect balance send to cut receiver 1 \n Expected 13.0 but got - ".concat((getBalance(cutReceiver2.address)).toString()))
+    assert(getLatestCollectionId(offeree.address, /public/exampleNFTCollection) == 0, message: "Incorrect NFT get transferred")
+}
 
 
 ///////////////////
@@ -338,7 +401,8 @@ pub fun executeProposeOfferTx(
     _ signer: Test.Account,
     _ nftReceiver: Address,
     _ maximumOfferAmount: UFix64,
-    _ offerCuts: [AnyStruct],
+    _ cutReceivers: [Address],
+    _ cuts: [UFix64],
     _ offerParamsString: {String: String},
     _ resolverRefProvider: Address,
     _ expectedError: String?
@@ -351,22 +415,54 @@ pub fun executeProposeOfferTx(
         "../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
         "../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
     }))
-    let txCode = Test.readFile("../../../transactions/propose_offer_for_example_nft.cdc")
+    let txCode = Test.readFile("../../../transactions/propose_offer.cdc")
     assert(
-        txExecutor(txCode, [signer], [nftReceiver, maximumOfferAmount, offerCuts, offerParamsString, resolverRefProvider], expectedError),
+        txExecutor(txCode, [signer], [nftReceiver, maximumOfferAmount, cutReceivers, cuts, offerParamsString, resolverRefProvider], expectedError),
         message: "Failed to propose offer"
+    )
+}
+
+pub fun executeOfferAcceptTx(
+    _ signer: Test.Account,
+    _ nftId: UInt64,
+    _ offerId: UInt64,
+    _ openOffersHolder: Address,
+    _ expectedError: String?
+) {
+    blockchain.useConfiguration(Test.Configuration({
+        "../contracts/Offers.cdc": accounts["Offers"]!.address,
+        "../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
+        "../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
+        "../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
+        "../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
+    }))
+
+    let txCode = Test.readFile("../../../transactions/accept_offer.cdc")
+    assert(
+        txExecutor(txCode, [signer], [nftId, offerId, openOffersHolder], expectedError),
+        message: "Failed to accept offer"
     )
 }
 
 pub fun setupVault(_ whom: Test.Account) {
     blockchain.useConfiguration(Test.Configuration({
         "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../../../../../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address
+        "../../../../../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
+        "../../../../../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address
     }))
     let txCode = Test.readFile("./mocks/transactions/setup_example_token_account.cdc")
     assert(
         txExecutor(txCode, [whom], [], nil),
         message: "Failed to install Vault resource in given account"
+    )
+}
+
+pub fun executeSetupVaultAndSetupRoyaltyReceiver(_ whom: Test.Account, _ vaultPath: StoragePath) {
+    setupVault(whom)
+    let txCode = Test.readFile("./mocks/transactions/setup_account_to_receive_royalty.cdc")
+    assert(
+        txExecutor(txCode, [whom], [vaultPath], nil),
+        message: "Failed to setup account to receive royalty"
     )
 }
 
@@ -384,8 +480,10 @@ pub fun mintTokens(_ recipient: Address, _ amount: UFix64) {
 
 pub fun executeSetupVaultAndMintTokensTx(_ whom: Test.Account, _ amount: UFix64) {
     setupVault(whom)
-    mintTokens(whom.address, amount)
-    assert(getBalance(whom.address) == amount, message: "Balance mis-match")
+    if amount != 0.0 {
+        mintTokens(whom.address, amount)
+        assert(getBalance(whom.address) == amount, message: "Balance mis-match")
+    }
 }
 
 pub fun executeSetupExampleNFTAccount(_ whom: Test.Account) {
@@ -394,11 +492,34 @@ pub fun executeSetupExampleNFTAccount(_ whom: Test.Account) {
         "../../../../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
         "../../../../../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address
     }))
-
     let txCode = Test.readFile("./mocks/transactions/setup_example_nft_account.cdc")
     assert(
         txExecutor(txCode, [whom], [], nil),
         message: "Failed to setup account for ExampleNFT"
+    )
+}
+
+pub fun executeMintNFTTx(
+    _ signer: Test.Account,
+    _ recipient: Address,
+    _ name: String,
+    _ description: String,
+    _ thumbnail: String,
+    _ cuts: [UFix64],
+    _ royaltyDescriptions: [String],
+    _ royaltyBeneficiaries: [Address],
+    _ expectedError: String?
+) {
+    blockchain.useConfiguration(Test.Configuration({
+        "../../../../../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
+        "../../../../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
+        "../../../../../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address,
+        "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address
+    }))
+    let txCode = Test.readFile("./mocks/transactions/mint_nft.cdc")
+    assert(
+        txExecutor(txCode, [signer], [recipient, name, description, thumbnail, cuts, royaltyDescriptions, royaltyBeneficiaries], expectedError),
+        message: "Failed mint NFT for given receipient"
     )
 }
 
@@ -480,12 +601,37 @@ pub fun getNoOfOfferCreated(_ account: Address): Int64 {
     return scriptResult! as! Int64
 }
 
-// pub fun getOfferDetails(_ target: Address, _ offerId: UInt64): (UInt64, Type) {
-//     blockchain.useConfiguration(Test.Configuration({
-//         "../contracts/Offers.cdc": accounts["Offers"]!.address
-//     }))
-//     let scriptResult = scriptExecutor("./mocks/scripts/get_offer_details.cdc", [target, offerId])
-//     return scriptResult! as! (UInt64, Type)
-// }
+pub fun getOfferDetails(_ target: Address, _ offerId: UInt64): UFix64 {
+    blockchain.useConfiguration(Test.Configuration({
+        "../../../../../contracts/Offers.cdc": accounts["Offers"]!.address
+    }))
+    let scriptResult = scriptExecutor("./mocks/scripts/get_offer_details.cdc", [target, offerId])
+    return scriptResult! as! UFix64
+}
 
+pub fun getLatestCollectionId(_ address: Address, _ collectionPublicPath: PublicPath): UInt64 {
+    blockchain.useConfiguration(Test.Configuration({
+        "../../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
+        "../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
+    }))
+    var scriptResult = scriptExecutor("./mocks/scripts/get_collection_ids_length.cdc", [address, collectionPublicPath])
+    let lengthOfCollectionId = scriptResult! as! Int64
+    scriptResult = scriptExecutor("./mocks/scripts/get_collection_ids.cdc", [address, collectionPublicPath, lengthOfCollectionId - 1])
+    return scriptResult! as! UInt64
+}
 
+pub fun getExpectedPaymentToOfferee(
+    _ offerId: UInt64,
+    _ offerCreator: Address,
+    _ offereeAddress: Address,
+    _ nftId: UInt64,
+    _ collectionPublicPath: PublicPath
+): UFix64 {
+    blockchain.useConfiguration(Test.Configuration({
+        "../contracts/Offers.cdc": accounts["Offers"]!.address,
+        "../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
+        "../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address
+    }))
+    let scriptResult = scriptExecutor("../../../scripts/get_expected_payment_to_offeree.cdc", [offerId, offerCreator, offereeAddress, nftId, collectionPublicPath])
+    return scriptResult! as! UFix64
+}
