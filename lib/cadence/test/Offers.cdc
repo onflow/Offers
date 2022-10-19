@@ -66,14 +66,14 @@ pub fun setup() {
         "../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
     }))
 
-    deploySmartContract(blockchain, "FungibleToken", accounts["FungibleToken"]!, "../../../contracts/utility/FungibleToken.cdc")
-    deploySmartContract(blockchain, "NonFungibleToken", accounts["NonFungibleToken"]!, "../../../contracts/utility/NonFungibleToken.cdc")
-    deploySmartContract(blockchain, "MetadataViews", accounts["MetadataViews"]!, "../../../contracts/utility/MetadataViews.cdc")
-    deploySmartContract(blockchain, "ExampleToken", accounts["ExampleToken"]!, "../../../contracts/utility/ExampleToken.cdc")
-    deploySmartContract(blockchain, "ExampleNFT", accounts["ExampleNFT"]!, "../../../contracts/utility/ExampleNFT.cdc")
-    deploySmartContract(blockchain, "Resolver", accounts["Resolver"]!, "../../../contracts/Resolver.cdc")
-    deploySmartContract(blockchain, "ExampleOfferResolver", accounts["ExampleOfferResolver"]!, "../../../contracts/ExampleOfferResolver.cdc")
-    deploySmartContract(blockchain, "Offers", accounts["Offers"]!, "../../../contracts/Offers.cdc")
+    deploySmartContract("FungibleToken", accounts["FungibleToken"]!, "../../../contracts/utility/FungibleToken.cdc")
+    deploySmartContract("NonFungibleToken", accounts["NonFungibleToken"]!, "../../../contracts/utility/NonFungibleToken.cdc")
+    deploySmartContract("MetadataViews", accounts["MetadataViews"]!, "../../../contracts/utility/MetadataViews.cdc")
+    deploySmartContract("ExampleToken", accounts["ExampleToken"]!, "../../../contracts/utility/ExampleToken.cdc")
+    deploySmartContract("ExampleNFT", accounts["ExampleNFT"]!, "../../../contracts/utility/ExampleNFT.cdc")
+    deploySmartContract("Resolver", accounts["Resolver"]!, "../../../contracts/Resolver.cdc")
+    deploySmartContract("ExampleOfferResolver", accounts["ExampleOfferResolver"]!, "../../../contracts/ExampleOfferResolver.cdc")
+    deploySmartContract("Offers", accounts["Offers"]!, "../../../contracts/Offers.cdc")
 }
 
 //////////////
@@ -265,7 +265,7 @@ pub fun testAcceptTheOffer() {
 ///////////////////
 
 /// Helper function to deploy required smart contracts.
-pub fun deploySmartContract(_ blockchain: Test.Blockchain, _ contractName: String, _ account: Test.Account, _ filePath: String) {
+pub fun deploySmartContract(_ contractName: String, _ account: Test.Account, _ filePath: String) {
     let contractCode = Test.readFile(filePath)
     let err = blockchain.deployContract(
         name: contractName,
