@@ -3,60 +3,6 @@ import Test
 pub var blockchain = Test.newEmulatorBlockchain()
 pub var accounts: {String: Test.Account} = {}
 
-pub struct CustomOfferCut {
-    pub let receiver: Address
-    pub let amount: UFix64
-
-    /// initializer
-    ///
-    init(receiver: Address, amount: UFix64) {
-        self.receiver = receiver
-        self.amount = amount
-    }
-}
-
-// Hack to access the data type of Offers contract
-pub struct CustomOfferDetails {
-    // The ID of the offer
-    pub let offerId: UInt64
-    // The Type of the NFT
-    pub let nftType: Type
-    // The Type of the FungibleToken that payments must be made in.
-    pub let paymentVaultType: Type
-    // The Offer amount for the NFT
-    pub let maximumOfferAmount: UFix64
-    // Flag to tracked the purchase state
-    pub var purchased: Bool
-    // This specifies the division of payment between recipients.
-    pub let offerCuts: [CustomOfferCut]
-    // Used to hold Offer metadata and offer type information
-    pub let offerParamsString: {String: String}
-    pub let offerParamsUFix64: {String:UFix64}
-    pub let offerParamsUInt64: {String:UInt64}
-
-    init(   
-        offerId: UInt64,
-        nftType: Type,
-        maximumOfferAmount: UFix64,
-        offerCuts: [CustomOfferCut],
-        offerParamsString: {String: String},
-        offerParamsUFix64: {String:UFix64},
-        offerParamsUInt64: {String:UInt64},
-        paymentVaultType: Type,
-        purchased: Bool
-    ) {
-        self.offerId = offerId
-        self.nftType = nftType
-        self.maximumOfferAmount = maximumOfferAmount
-        self.purchased = purchased
-        self.offerParamsString = offerParamsString
-        self.offerParamsUFix64 = offerParamsUFix64
-        self.offerParamsUInt64 = offerParamsUInt64
-        self.paymentVaultType = paymentVaultType
-        self.offerCuts = offerCuts
-    }
-}
-
 pub fun setup() {
 
     // Setup accounts for the smart contract.
