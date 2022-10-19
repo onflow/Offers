@@ -92,46 +92,40 @@ pub fun setup() {
         "cutReceiver1": cutReceiver1,
         "cutReceiver2": cutReceiver2
     }
-
-
-    deploySmartContract(blockchain, "FungibleToken", accounts["FungibleToken"]!, "../../../contracts/utility/FungibleToken.cdc")
-    deploySmartContract(blockchain, "NonFungibleToken", accounts["NonFungibleToken"]!, "../../../contracts/utility/NonFungibleToken.cdc")
-
-    // Let the CLI know how the above addresses are mapped to the contracts.
-    blockchain.useConfiguration(Test.Configuration({
-        "./FungibleToken.cdc":accounts["FungibleToken"]!.address,
-        "./NonFungibleToken.cdc":accounts["NonFungibleToken"]!.address
-    }))
-
-    deploySmartContract(blockchain, "MetadataViews", accounts["MetadataViews"]!, "../../../contracts/utility/MetadataViews.cdc")
-    deploySmartContract(blockchain, "ExampleToken", accounts["ExampleToken"]!, "../../../contracts/utility/ExampleToken.cdc")
-
+    
     // Let the CLI know how the above addresses are mapped to the contracts.
     blockchain.useConfiguration(Test.Configuration({
         "./FungibleToken.cdc":accounts["FungibleToken"]!.address,
         "./NonFungibleToken.cdc":accounts["NonFungibleToken"]!.address,
-        "./MetadataViews.cdc":accounts["MetadataViews"]!.address
-    }))
-
-    deploySmartContract(blockchain, "ExampleNFT", accounts["ExampleNFT"]!, "../../../contracts/utility/ExampleNFT.cdc")
-
-    // Let the CLI know how the above addresses are mapped to the contracts.
-    blockchain.useConfiguration(Test.Configuration({
-        "./utility/FungibleToken.cdc":accounts["FungibleToken"]!.address,
-        "./utility/NonFungibleToken.cdc":accounts["NonFungibleToken"]!.address,
-        "./utility/MetadataViews.cdc":accounts["MetadataViews"]!.address
-    }))
-
-    deploySmartContract(blockchain, "Resolver", accounts["Resolver"]!, "../../../contracts/Resolver.cdc")
-
-    // Let the CLI know how the above addresses are mapped to the contracts.
-    blockchain.useConfiguration(Test.Configuration({
+        "./MetadataViews.cdc":accounts["MetadataViews"]!.address,
         "./utility/FungibleToken.cdc":accounts["FungibleToken"]!.address,
         "./utility/NonFungibleToken.cdc":accounts["NonFungibleToken"]!.address,
         "./utility/MetadataViews.cdc":accounts["MetadataViews"]!.address,
-        "./Resolver.cdc":accounts["Resolver"]!.address
+        "./Resolver.cdc":accounts["Resolver"]!.address,
+        "../contracts/Offers.cdc": accounts["Offers"]!.address,
+        "../contracts/Resolver.cdc": accounts["Resolver"]!.address,
+        "../contracts/ExampleOfferResolver.cdc": accounts["ExampleOfferResolver"]!.address,
+        "../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
+        "../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
+        "../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
+        "../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
+        "../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address,
+        "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
+        "../../../../../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
+        "../../../../../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address,
+        "../../../../../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
+        "../../../../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
+        "../../../../../contracts/Offers.cdc": accounts["Offers"]!.address,
+        "../../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
+        "../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
     }))
 
+    deploySmartContract(blockchain, "FungibleToken", accounts["FungibleToken"]!, "../../../contracts/utility/FungibleToken.cdc")
+    deploySmartContract(blockchain, "NonFungibleToken", accounts["NonFungibleToken"]!, "../../../contracts/utility/NonFungibleToken.cdc")
+    deploySmartContract(blockchain, "MetadataViews", accounts["MetadataViews"]!, "../../../contracts/utility/MetadataViews.cdc")
+    deploySmartContract(blockchain, "ExampleToken", accounts["ExampleToken"]!, "../../../contracts/utility/ExampleToken.cdc")
+    deploySmartContract(blockchain, "ExampleNFT", accounts["ExampleNFT"]!, "../../../contracts/utility/ExampleNFT.cdc")
+    deploySmartContract(blockchain, "Resolver", accounts["Resolver"]!, "../../../contracts/Resolver.cdc")
     deploySmartContract(blockchain, "ExampleOfferResolver", accounts["ExampleOfferResolver"]!, "../../../contracts/ExampleOfferResolver.cdc")
     deploySmartContract(blockchain, "Offers", accounts["Offers"]!, "../../../contracts/Offers.cdc")
 }
@@ -375,9 +369,6 @@ pub fun txExecutor(_ txCode: String, _ signers: [Test.Account], _ arguments: [An
 ///////////////
 
 pub fun executeSetupAccountTx(_ signer: Test.Account) {
-    blockchain.useConfiguration(Test.Configuration({
-        "../contracts/Offers.cdc": accounts["Offers"]!.address
-    }))
     let txCode = Test.readFile("../../../transactions/setup_account.cdc")
     assert(
         txExecutor(txCode, [signer], [], nil),
@@ -386,10 +377,6 @@ pub fun executeSetupAccountTx(_ signer: Test.Account) {
 }
 
 pub fun executeSetupResolverTx(_ signer: Test.Account) {
-    blockchain.useConfiguration(Test.Configuration({
-        "../contracts/Resolver.cdc": accounts["Resolver"]!.address,
-        "../contracts/ExampleOfferResolver.cdc": accounts["ExampleOfferResolver"]!.address
-    }))
     let txCode = Test.readFile("../../../transactions/setup_resolver.cdc")
     assert(
         txExecutor(txCode, [signer], [], nil),
@@ -407,14 +394,6 @@ pub fun executeProposeOfferTx(
     _ resolverRefProvider: Address,
     _ expectedError: String?
 ) {
-    blockchain.useConfiguration(Test.Configuration({
-        "../contracts/Resolver.cdc": accounts["Resolver"]!.address,
-        "../contracts/Offers.cdc": accounts["Offers"]!.address,
-        "../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
-        "../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
-    }))
     let txCode = Test.readFile("../../../transactions/propose_offer.cdc")
     assert(
         txExecutor(txCode, [signer], [nftReceiver, maximumOfferAmount, cutReceivers, cuts, offerParamsString, resolverRefProvider], expectedError),
@@ -429,14 +408,6 @@ pub fun executeOfferAcceptTx(
     _ openOffersHolder: Address,
     _ expectedError: String?
 ) {
-    blockchain.useConfiguration(Test.Configuration({
-        "../contracts/Offers.cdc": accounts["Offers"]!.address,
-        "../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
-        "../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
-    }))
-
     let txCode = Test.readFile("../../../transactions/accept_offer.cdc")
     assert(
         txExecutor(txCode, [signer], [nftId, offerId, openOffersHolder], expectedError),
@@ -445,11 +416,6 @@ pub fun executeOfferAcceptTx(
 }
 
 pub fun setupVault(_ whom: Test.Account) {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../../../../../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address,
-        "../../../../../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address
-    }))
     let txCode = Test.readFile("./mocks/transactions/setup_example_token_account.cdc")
     assert(
         txExecutor(txCode, [whom], [], nil),
@@ -467,10 +433,6 @@ pub fun executeSetupVaultAndSetupRoyaltyReceiver(_ whom: Test.Account, _ vaultPa
 }
 
 pub fun mintTokens(_ recipient: Address, _ amount: UFix64) {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../../../../../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address
-    }))
     let txCode = Test.readFile("./mocks/transactions/mint_tokens.cdc")
     assert(
         txExecutor(txCode, [accounts["ExampleToken"]!], [recipient, amount], nil),
@@ -487,11 +449,6 @@ pub fun executeSetupVaultAndMintTokensTx(_ whom: Test.Account, _ amount: UFix64)
 }
 
 pub fun executeSetupExampleNFTAccount(_ whom: Test.Account) {
-     blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../../../../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
-        "../../../../../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address
-    }))
     let txCode = Test.readFile("./mocks/transactions/setup_example_nft_account.cdc")
     assert(
         txExecutor(txCode, [whom], [], nil),
@@ -510,12 +467,6 @@ pub fun executeMintNFTTx(
     _ royaltyBeneficiaries: [Address],
     _ expectedError: String?
 ) {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../../../../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
-        "../../../../../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address,
-        "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address
-    }))
     let txCode = Test.readFile("./mocks/transactions/mint_nft.cdc")
     assert(
         txExecutor(txCode, [signer], [recipient, name, description, thumbnail, cuts, royaltyDescriptions, royaltyBeneficiaries], expectedError),
@@ -551,69 +502,41 @@ pub fun checkAccountHasOfferResolverPublicCapability(_ target: Address): Bool {
 }
 
 pub fun getTypeOfExampleNFT(): Type {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
-    }))
     let scriptResult = scriptExecutor("./mocks/scripts/get_type_of_example_nft.cdc", [])
     return scriptResult! as! Type
 }
 
 pub fun getBalance(_ target: Address): UFix64 {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../../../../../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address
-    }))
     let scriptResult = scriptExecutor("./mocks/scripts/get_vault_balance.cdc", [target])
     return scriptResult! as! UFix64
 }
 
 pub fun getOfferCuts(_ receivers: [Address], _ amounts: [UFix64]): [AnyStruct] {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/Offers.cdc": accounts["Offers"]!.address,
-        "../../../../../contracts/utility/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../../../../../contracts/utility/ExampleToken.cdc": accounts["ExampleToken"]!.address
-    }))
     let scriptResult = scriptExecutor("./mocks/scripts/get_offer_cuts.cdc", [receivers, amounts])
     return scriptResult! as! [AnyStruct]
 }
 
 pub fun getOfferId(_ account: Address, _ index: Int64): UInt64 {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/Offers.cdc": accounts["Offers"]!.address
-    }))
     let scriptResult = scriptExecutor("./mocks/scripts/get_offer_ids_at_index.cdc", [account, index])
     return scriptResult! as! UInt64
 }
 
 pub fun getOfferIds(_ account: Address): [UInt64] {
-    blockchain.useConfiguration(Test.Configuration({
-        "../contracts/Offers.cdc": accounts["Offers"]!.address
-    }))
     let scriptResult = scriptExecutor("../../../scripts/get_offer_ids.cdc", [account])
     return scriptResult! as! [UInt64]
 }
 
 pub fun getNoOfOfferCreated(_ account: Address): Int64 {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/Offers.cdc": accounts["Offers"]!.address
-    }))
     let scriptResult = scriptExecutor("./mocks/scripts/get_offer_ids_length.cdc", [account])
     return scriptResult! as! Int64
 }
 
 pub fun getOfferDetails(_ target: Address, _ offerId: UInt64): UFix64 {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../../../../contracts/Offers.cdc": accounts["Offers"]!.address
-    }))
     let scriptResult = scriptExecutor("./mocks/scripts/get_offer_details.cdc", [target, offerId])
     return scriptResult! as! UFix64
 }
 
 pub fun getLatestCollectionId(_ address: Address, _ collectionPublicPath: PublicPath): UInt64 {
-    blockchain.useConfiguration(Test.Configuration({
-        "../../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../../contracts/utility/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
-    }))
     var scriptResult = scriptExecutor("./mocks/scripts/get_collection_ids_length.cdc", [address, collectionPublicPath])
     let lengthOfCollectionId = scriptResult! as! Int64
     scriptResult = scriptExecutor("./mocks/scripts/get_collection_ids.cdc", [address, collectionPublicPath, lengthOfCollectionId - 1])
@@ -627,11 +550,6 @@ pub fun getExpectedPaymentToOfferee(
     _ nftId: UInt64,
     _ collectionPublicPath: PublicPath
 ): UFix64 {
-    blockchain.useConfiguration(Test.Configuration({
-        "../contracts/Offers.cdc": accounts["Offers"]!.address,
-        "../contracts/utility/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../contracts/utility/MetadataViews.cdc": accounts["MetadataViews"]!.address
-    }))
     let scriptResult = scriptExecutor("../../../scripts/get_expected_payment_to_offeree.cdc", [offerId, offerCreator, offereeAddress, nftId, collectionPublicPath])
     return scriptResult! as! UFix64
 }
