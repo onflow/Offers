@@ -6,11 +6,11 @@ pub contract ExampleOfferResolver {
 
     pub let ExampleOfferResolverStoragePath: StoragePath
 
-    // Resolver resource holds the Offer exchange resolution rules.
+    /// Resolver resource holds the Offer exchange resolution rules.
     pub resource OfferResolver: Resolver.ResolverPublic {
-        // checkOfferResolver
-        // Holds the validation rules for resolver each type of supported ResolverType
-        // Function returns TRUE if the provided nft item passes the criteria for exchange
+        /// checkOfferResolver
+        /// Holds the validation rules for resolver each type of supported ResolverType
+        /// Function returns TRUE if the provided nft item passes the criteria for exchange
         pub fun checkOfferResolver(
          item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
          offerParamsString: {String:String},

@@ -5,7 +5,7 @@ import NonFungibleToken from "../contracts/utility/NonFungibleToken.cdc"
 import ExampleToken from "../contracts/utility/ExampleToken.cdc"
 import ExampleNFT from "../contracts/utility/ExampleNFT.cdc"
 
-// This version of transaction is implemented because cadence test framework doesn't support importing of contract.
+/// This version of transaction is implemented because cadence test framework doesn't support importing of contract.
 transaction(nftReceiver: Address, maximumOfferAmount: UFix64, cutReceivers: [Address], cuts:[UFix64], offerParamsString: {String: String}, resolverRefProvider: Address) {
     let offerManager: &Offers.OpenOffers{Offers.OfferManager}
     let providerVaultCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>

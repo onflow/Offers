@@ -3,23 +3,23 @@ import NonFungibleToken from "./utility/NonFungibleToken.cdc"
 import MetadataViews from "./utility/MetadataViews.cdc"
 import Resolver from "./Resolver.cdc"
 
-// Offers
-//
-// Contract holds the Offer resource and a public method to create them.
-//
-// Anyone interested in purchasing an asset such as NFT can create an offer resource and express
-// their willingness to purchase the asset at the proposed price. Using the 'Resolver', the offeror
-// can also propose offers with different filters on asset metadata. The Resolver contract provides
-// a generic resource to resolve the applied filter on the proposed offer.
-//
-// If the asset supports 'MetadataViews.Royalty' the offer resource will also honour the royalties.
-// The offeror can set a different `OfferCut` to pay the platform fee or any other type of commission.
-//
-// NFT owners can keep an eye out for 'OfferAvailable' events for NFTs they own and check the Offer amount
-// to determine whether or not to accept the offer.
-//
-// Marketplaces and other aggregators can track 'OfferAvailable' events and display offers of interest to logged-in users.
-//
+/// Offers
+///
+/// Contract holds the Offer resource and a public method to create them.
+///
+/// Anyone interested in purchasing an asset such as NFT can create an offer resource and express
+/// their willingness to purchase the asset at the proposed price. Using the 'Resolver', the offeror
+/// can also propose offers with different filters on asset metadata. The Resolver contract provides
+/// a generic resource to resolve the applied filter on the proposed offer.
+///
+/// If the asset supports 'MetadataViews.Royalty' the offer resource will also honour the royalties.
+/// The offeror can set a different `OfferCut` to pay the platform fee or any other type of commission.
+///
+/// NFT owners can keep an eye out for 'OfferAvailable' events for NFTs they own and check the Offer amount
+/// to determine whether or not to accept the offer.
+///
+/// Marketplaces and other aggregators can track 'OfferAvailable' events and display offers of interest to logged-in users.
+///
 pub contract Offers {
 
     /// Emitted when the `OpenOffers` resoruce gets destroyed.
@@ -28,8 +28,8 @@ pub contract Offers {
     /// Emitted when the `OpenOffers` resoruce gets created.
     pub event OpenOffersInitialized(OpenOffersResourceId: UInt64)
 
-    // OfferAvailable
-    // Emitted when the offer gets created by the offeror
+    /// OfferAvailable
+    /// Emitted when the offer gets created by the offeror
     pub event OfferAvailable(
         openOffersAddress: Address,
         offerId: UInt64,
@@ -43,10 +43,10 @@ pub contract Offers {
         offerCuts: [FundsReceiver]
     )
 
-    // OfferCompleted
-    // The Offer has been resolved. The offer has either been accepted
-    // by offeree, or the offer has been removed and destroyed.
-    //
+    /// OfferCompleted
+    /// The Offer has been resolved. The offer has either been accepted
+    /// by offeree, or the offer has been removed and destroyed.
+    ///
     pub event OfferCompleted(
         purchased: Bool,
         acceptingAddress: Address?,
@@ -128,36 +128,36 @@ pub contract Offers {
         }
     }
 
-    // OfferDetails
-    // A struct containing Offers' data.
-    //
+    /// OfferDetails
+    /// A struct containing Offers' data.
+    ///
     pub struct OfferDetails {
-        // The ID of the offer
+        /// The ID of the offer
         pub let offerId: UInt64
-        // The Type of the NFT
+        /// The Type of the NFT
         pub let nftType: Type
-        // The Type of the FungibleToken that payments must be made in.
+        /// The Type of the FungibleToken that payments must be made in.
         pub let paymentVaultType: Type
-        // The Offer amount for the NFT
+        /// The Offer amount for the NFT
         pub let maximumOfferAmount: UFix64
-        // Flag to tracked the purchase state
+        /// Flag to tracked the purchase state
         pub var purchased: Bool
-        // This specifies the division of payment between recipients.
+        /// This specifies the division of payment between recipients.
         pub let offerCuts: [OfferCut]
-        // Used to hold Offer metadata and offer type information
+        /// Used to hold Offer metadata and offer type information
         pub let offerParamsString: {String: String}
         pub let offerParamsUFix64: {String:UFix64}
         pub let offerParamsUInt64: {String:UInt64}
 
-        // setToPurchased
-        // Irreversibly set this offer as purchased.
-        //
+        /// setToPurchased
+        /// Irreversibly set this offer as purchased.
+        ///
         access(contract) fun setToPurchased() {
             self.purchased = true
         }
 
-        // Initializer
-        //
+        /// Initializer
+        ///
         init(
             offerId: UInt64,
             nftType: Type,
@@ -193,37 +193,37 @@ pub contract Offers {
         }
     }
 
-    // OfferPublic
-    // An interface providing a useful public interface to an Offer resource.
-    //
+    /// OfferPublic
+    /// An interface providing a useful public interface to an Offer resource.
+    ///
     pub resource interface OfferPublic {
-        // accept
-        // This will accept the offer if provided with the NFT id that matches the Offer
-        //
+        /// accept
+        /// This will accept the offer if provided with the NFT id that matches the Offer
+        ///
         pub fun accept(
             item: @{NonFungibleToken.INFT, MetadataViews.Resolver},
             receiverCapability: Capability<&{FungibleToken.Receiver}>,
         )
-        // getDetails
-        // Return Offer details
-        //
+        /// getDetails
+        /// Return Offer details
+        ///
         pub fun getDetails(): OfferDetails
 
-        // getExpectedPaymentToOfferee
-        // Return the amount of fungible tokens will be received by the offeree
-        //
+        /// getExpectedPaymentToOfferee
+        /// Return the amount of fungible tokens will be received by the offeree
+        ///
         pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64
     }
 
 
     pub resource Offer: OfferPublic {
-        // The OfferDetails struct of the Offer
+        /// The OfferDetails struct of the Offer
         access(self) let details: OfferDetails
-        // The vault which will handle the payment if the Offer is accepted.
+        /// The vault which will handle the payment if the Offer is accepted.
         access(contract) let providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
-        // Receiver address for the NFT when/if the Offer is accepted.
+        /// Receiver address for the NFT when/if the Offer is accepted.
         access(contract) let nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>
-        // Resolver capability for the offer type
+        /// Resolver capability for the offer type
         access(contract) let resolverCapability: Capability<&{Resolver.ResolverPublic}>
 
         init(
@@ -261,12 +261,12 @@ pub contract Offers {
             )
         }
 
-        // accept
-        // Accept the offer if...
-        // - Calling from an Offer that hasn't been purchased/desetoryed.
-        // - Provided with a NFT matching the NFT id within the Offer details.
-        // - Provided with a NFT matching the NFT Type within the Offer details.
-        //
+        /// accept
+        /// Accept the offer if...
+        /// - Calling from an Offer that hasn't been purchased/desetoryed.
+        /// - Provided with a NFT matching the NFT id within the Offer details.
+        /// - Provided with a NFT matching the NFT Type within the Offer details.
+        ///
         pub fun accept(
             item: @AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
             receiverCapability: Capability<&{FungibleToken.Receiver}>,
@@ -347,16 +347,16 @@ pub contract Offers {
             )
         }
 
-        // getDetails
-        // Return Offer details
-        //
+        /// getDetails
+        /// Return Offer details
+        ///
         pub fun getDetails(): OfferDetails {
             return self.details
         }
 
-        // getExpectedPaymentToOfferee
-        // Return the amount of fungible tokens will be received by the offeree
-        //
+        /// getExpectedPaymentToOfferee
+        /// Return the amount of fungible tokens will be received by the offeree
+        ///
         pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64 {
             var totalCutPayment: UFix64 = 0.0
             var totalRoyaltyPayment: UFix64 = 0.0
@@ -434,24 +434,24 @@ pub contract Offers {
         pub fun removeOffer(offerId: UInt64)
     }
 
-    // OpenOffersPublic
-    // An interface providing a useful public interface to interact with OfferManager.
-    //
+    /// OpenOffersPublic
+    /// An interface providing a useful public interface to interact with OfferManager.
+    ///
     pub resource interface OpenOffersPublic {
 
-        // getOfferIds
-        // Get a list of Offer ids created by the offeror and hold by the OfferManager resource.
-        //
+        /// getOfferIds
+        /// Get a list of Offer ids created by the offeror and hold by the OfferManager resource.
+        ///
         pub fun getOfferIds(): [UInt64]
 
-        // borrowOffer
-        // Borrow an Offer to either accept the Offer or get details on the Offer.
-        //
+        /// borrowOffer
+        /// Borrow an Offer to either accept the Offer or get details on the Offer.
+        ///
         pub fun borrowOffer(offerId: UInt64): &Offer{OfferPublic}?
 
-        // cleanup
-        // Remove already fullfilled offer.
-        //
+        /// cleanup
+        /// Remove already fullfilled offer.
+        ///
         pub fun cleanup(offerId: UInt64)
 
         /// getAllOfferDetails
@@ -510,23 +510,23 @@ pub contract Offers {
             return offerResourceID
         }
 
-        // removeOffer
-        // Remove an Offer that has not yet been accepted from the collection and destroy it.
-        //
+        /// removeOffer
+        /// Remove an Offer that has not yet been accepted from the collection and destroy it.
+        ///
         pub fun removeOffer(offerId: UInt64) {
             destroy self.offers.remove(key: offerId) ?? panic("Provided offerId does not exist")
         }
 
-        // getOfferIds
-        // Returns an array of the Offer resource IDs that are in the collection
-        //
+        /// getOfferIds
+        /// Returns an array of the Offer resource IDs that are in the collection
+        ///
         pub fun getOfferIds(): [UInt64] {
             return self.offers.keys
         }
 
-        // borrowOffer
-        // Returns a read-only view of the Offer for the given offerId if it is contained by this collection.
-        //
+        /// borrowOffer
+        /// Returns a read-only view of the Offer for the given offerId if it is contained by this collection.
+        ///
         pub fun borrowOffer(offerId: UInt64): &Offer{OfferPublic}? {
             if self.offers[offerId] != nil {
                 return &self.offers[offerId] as &Offer{OfferPublic}?
@@ -547,11 +547,11 @@ pub contract Offers {
             return offerDetails
         }
 
-        // cleanup
-        // Remove an Offer *if* it has been accepted.
-        // Anyone can call, but at present it only benefits the account owner to do so.
-        // Kind purchasers can however call it if they like.
-        //
+        /// cleanup
+        /// Remove an Offer *if* it has been accepted.
+        /// Anyone can call, but at present it only benefits the account owner to do so.
+        /// Kind purchasers can however call it if they like.
+        ///
         pub fun cleanup(offerId: UInt64) {
             pre {
                 self.offers[offerId] != nil: "could not find Offer with given id"
@@ -570,8 +570,8 @@ pub contract Offers {
             emit OpenOffersDestroyed(openOffersResourceID: self.uuid)
         }
 
-        // constructor
-        //
+        /// constructor
+        ///
         init() {
             self.offers <- {}
             // Let event consumers know that this openOffers will no longer exist.
@@ -579,9 +579,9 @@ pub contract Offers {
         }
     }
 
-    // createOpenOffers
-    // Make creating an OpenOffers publicly accessible.
-    //
+    /// createOpenOffers
+    /// Make creating an OpenOffers publicly accessible.
+    ///
     pub fun createOpenOffers(): @OpenOffers {
         return <-create OpenOffers()
     }

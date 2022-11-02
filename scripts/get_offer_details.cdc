@@ -1,7 +1,6 @@
 import Offers from "../contracts/Offers.cdc"
 
-// This script returns the details for a Offer within a OpenOffer
-
+/// This script returns the details for a Offer within a OpenOffer
 pub fun main(account: Address, offerId: UInt64): Offers.OfferDetails {
     let openOffersRef = getAccount(account)
         .getCapability<&Offers.OpenOffers{Offers.OpenOffersPublic}>(
