@@ -7,21 +7,25 @@ import Resolver from "./Resolver.cdc"
 //
 // Contract holds the Offer resource and a public method to create them.
 //
-// Each Offer can have one or more royalties of the sale price that
-// goes to one or more addresses.
+// Anyone interested in purchasing an asset such as NFT can create an offer resource and express
+// their willingness to purchase the asset at the proposed price. Using the 'Resolver', the offeror
+// can also propose offers with different filters on asset metadata. The Resolver contract provides
+// a generic resource to resolve the applied filter on the proposed offer.
 //
-// Owners of NFT can watch for `OfferAvailable` events and check
-// the Offer amount to see if they wish to accept the offer.
+// If the asset supports 'MetadataViews.Royalty' the offer resource will also honour the royalties.
+// The offeror can set a different `OfferCut` to pay the platform fee or any other type of commission.
 //
-// Marketplaces and other aggregators can watch for `OfferAvailable` events
-// and list offers of interest to logged in users.
+// NFT owners can keep an eye out for 'OfferAvailable' events for NFTs they own and check the Offer amount
+// to determine whether or not to accept the offer.
+//
+// Marketplaces and other aggregators can track 'OfferAvailable' events and display offers of interest to logged-in users.
 //
 pub contract Offers {
 
-    /// Emitted when the `OpenOffers` resoruce get destroyed.
+    /// Emitted when the `OpenOffers` resoruce gets destroyed.
     pub event OpenOffersDestroyed(openOffersResourceID: UInt64)
 
-    /// Emitted when the `OpenOffers` resoruce get created.
+    /// Emitted when the `OpenOffers` resoruce gets created.
     pub event OpenOffersInitialized(OpenOffersResourceId: UInt64)
 
     // OfferAvailable
@@ -36,6 +40,7 @@ pub contract Offers {
         offerParamsUFix64: {String:UFix64},
         offerParamsUInt64: {String:UInt64},
         paymentVaultType: Type,
+        offerCuts: [FundsReceiver]
     )
 
     // OfferCompleted
@@ -55,6 +60,8 @@ pub contract Offers {
         offerParamsUInt64: {String:UInt64},
         paymentVaultType: Type,
         nftId: UInt64?,
+        paidOfferCuts: [FundsReceiver],
+        paidRoyalties: [FundsReceiver]
     )
 
     /// OpenOffersStoragePath
@@ -68,6 +75,26 @@ pub contract Offers {
     /// FungibleTokenProviderVaultPath
     /// The private location for FungibleToken provider vault.
     pub let FungibleTokenProviderVaultPath: PrivatePath
+
+    /// FundsReceiver
+    /// Datatype to represent the receiver of funds in terms of `receiver` address
+    /// which actually receive funds and `amount` represents the number of FungibleTokens
+    /// received.
+    pub struct FundsReceiver {
+        /// The receiver for the payment.
+        /// To support event emission, address is preferred over capability.
+        pub let receiver: Address
+
+        /// The amount of the payment FungibleToken that will be paid to the receiver.
+        pub let amount: UFix64
+
+        /// initializer
+        ///
+        init(receiver: Address, amount: UFix64) {
+            self.receiver = receiver
+            self.amount = amount
+        }
+    }
 
     /// OfferCut
     /// A struct representing a recipient that must be sent a certain amount
@@ -90,6 +117,14 @@ pub contract Offers {
         init(receiver: Capability<&{FungibleToken.Receiver}>, amount: UFix64) {
             self.receiver = receiver
             self.amount = amount
+        }
+
+        /// Allow to converts the `OfferCut` into `FundsReceiver`.
+        pub fun into(): FundsReceiver {
+            return FundsReceiver(
+                receiver: self.receiver.address,
+                amount: self.amount
+            )
         }
     }
 
@@ -253,6 +288,9 @@ pub contract Offers {
                 offerParamsUFix64: self.details.offerParamsUFix64,
             )
 
+            var paidOfferCuts: [OfferCut] = []
+            var paidRoyalties: [FundsReceiver] = []
+
             assert(hasMeetingResolverCriteria, message: "Resolver failed, invalid NFT please check Offer criteria")
 
             // Withdraw maximum offered amount by the offeror.
@@ -262,7 +300,9 @@ pub contract Offers {
             for cut in self.details.offerCuts {
                 if let receiver = cut.receiver.borrow() {
                     let cutPayment <- toBePaidVault.withdraw(amount: cut.amount)
+                    // It may fail if cut receiver does not supports the paid vault type.
                     receiver.deposit(from: <- cutPayment)
+                    paidOfferCuts.append(cut)
                 }
             }
 
@@ -274,9 +314,11 @@ pub contract Offers {
                 let royalties = (royaltiesRef as! MetadataViews.Royalties).getRoyalties()
                 for royalty in royalties {
                     if let beneficiary = royalty.receiver.borrow() {
-                        let royaltyPayment <- toBePaidVault.withdraw(amount: royalty.cut * remainingAmount)
+                        let royaltyAmount = royalty.cut * remainingAmount
+                        let royaltyPayment <- toBePaidVault.withdraw(amount: royaltyAmount)
                         // Chances of failing the deposit is high if its type is different from the payment vault type
                         beneficiary.deposit(from: <- royaltyPayment)
+                        paidRoyalties.append(FundsReceiver(receiver: royalty.receiver.address, amount: royaltyAmount))
                     }
                 }
             }
@@ -300,6 +342,8 @@ pub contract Offers {
                 offerParamsUInt64: self.details.offerParamsUInt64,
                 paymentVaultType: self.details.paymentVaultType,
                 nftId: nftId,
+                paidOfferCuts: Offers.convertIntoFundsReceiver(cuts: paidOfferCuts),
+                paidRoyalties: paidRoyalties
             )
         }
 
@@ -353,6 +397,8 @@ pub contract Offers {
                     offerParamsUInt64: self.details.offerParamsUInt64,
                     paymentVaultType: self.details.paymentVaultType,
                     nftId: nil,
+                    paidOfferCuts: [],
+                    paidRoyalties: []
                 )
             }
         }
@@ -363,12 +409,12 @@ pub contract Offers {
     /// different offers created by themselves.
     /// Example - If Alice intends to become and offeror then
     /// Alice should hold the OfferManager resource in her account
-    /// and using the offerManager resource Alic can create different
+    /// and using the offerManager resource Alice can create different
     /// offers and manage them like remove an offer.
     pub resource interface OfferManager {
 
         /// proposeOffer
-        /// Facilitates the creation of Offer.
+        /// Facilitates the creation of an Offer.
         ///
         pub fun proposeOffer(
             providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>,
@@ -407,6 +453,10 @@ pub contract Offers {
         // Remove already fullfilled offer.
         //
         pub fun cleanup(offerId: UInt64)
+
+        /// getAllOfferDetails
+        /// Returns details of all the offers.
+        pub fun getAllOfferDetails(): {UInt64: Offers.OfferDetails}
     }
 
     /// Definition of the APIs offered by the OfferManager resource and OpenOffersPublic.
@@ -442,9 +492,8 @@ pub contract Offers {
 
             let offerResourceID = offer.uuid
             // Add the new offer to the dictionary.
-            let oldOffer <- self.offers[offerResourceID] <- offer
-            // Note that oldOffer will always be nil, but we have to handle it.
-            destroy oldOffer
+            self.offers[offerResourceID] <-! offer
+            
             // Emit event
             emit OfferAvailable(
                 openOffersAddress: self.owner?.address!,
@@ -455,7 +504,8 @@ pub contract Offers {
                 offerParamsString: offerParamsString,
                 offerParamsUFix64: offerParamsUFix64,
                 offerParamsUInt64: offerParamsUInt64,
-                paymentVaultType: providerVaultCapability.getType()
+                paymentVaultType: providerVaultCapability.getType(),
+                offerCuts: Offers.convertIntoFundsReceiver(cuts: offerCuts)
             )
             return offerResourceID
         }
@@ -464,7 +514,7 @@ pub contract Offers {
         // Remove an Offer that has not yet been accepted from the collection and destroy it.
         //
         pub fun removeOffer(offerId: UInt64) {
-            destroy self.offers.remove(key: offerId) ?? panic("Provided offerId does not exists")
+            destroy self.offers.remove(key: offerId) ?? panic("Provided offerId does not exist")
         }
 
         // getOfferIds
@@ -483,6 +533,18 @@ pub contract Offers {
             } else {
                 return nil
             }
+        }
+
+        /// getAllOfferDetails
+        /// Returns details of all the offers.
+        pub fun getAllOfferDetails(): {UInt64: Offers.OfferDetails} {
+            var offerDetails: {UInt64: Offers.OfferDetails} = {}
+            for offerId in self.offers.keys {
+                if let borrowedOffer = self.borrowOffer(offerId: offerId) {
+                    offerDetails.insert(key: offerId, borrowedOffer.getDetails())
+                }
+            }
+            return offerDetails
         }
 
         // cleanup
@@ -522,6 +584,16 @@ pub contract Offers {
     //
     pub fun createOpenOffers(): @OpenOffers {
         return <-create OpenOffers()
+    }
+
+    /// convertIntoFundsReceiver
+    /// Helper function to convert the `OfferCut` data type to `FundsReceiver`.
+    pub fun convertIntoFundsReceiver(cuts: [OfferCut]): [FundsReceiver] {
+        var receivers: [FundsReceiver] = []
+        for cut in cuts {
+            receivers.append(cut.into())
+        }
+        return receivers
     }
 
     init () {
