@@ -51,7 +51,7 @@ transaction(nftReceiver: Address, maximumOfferAmount: UFix64, cutReceivers: [Add
     }
 
     execute {
-        self.offerManager.proposeOffer(
+        self.offerManager.createOffer(
             providerVaultCapability: self.providerVaultCap,
             nftReceiverCapability: self.nftReceiverCap,
             nftType: Type<@ExampleNFT.NFT>(),

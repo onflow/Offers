@@ -22,10 +22,10 @@ import Resolver from "./Resolver.cdc"
 ///
 pub contract Offers {
 
-    /// Emitted when the `OpenOffers` resoruce gets destroyed.
+    /// Emitted when the `OpenOffers` resource gets destroyed.
     pub event OpenOffersDestroyed(openOffersResourceID: UInt64)
 
-    /// Emitted when the `OpenOffers` resoruce gets created.
+    /// Emitted when the `OpenOffers` resource gets created.
     pub event OpenOffersInitialized(OpenOffersResourceId: UInt64)
 
     /// OfferAvailable
@@ -36,11 +36,11 @@ pub contract Offers {
         nftType: Type,
         maximumOfferAmount: UFix64,
         offerType: String,
-        offerParamsString: {String:String},
-        offerParamsUFix64: {String:UFix64},
-        offerParamsUInt64: {String:UInt64},
+        offerParamsString: {String: String},
+        offerParamsUFix64: {String: UFix64},
+        offerParamsUInt64: {String: UInt64},
         paymentVaultType: Type,
-        offerCuts: [FundsReceiver]
+        offerCuts: [FundsReceiverInfo]
     )
 
     /// OfferCompleted
@@ -55,13 +55,13 @@ pub contract Offers {
         nftType: Type,
         maximumOfferAmount: UFix64,
         offerType: String,
-        offerParamsString: {String:String},
-        offerParamsUFix64: {String:UFix64},
-        offerParamsUInt64: {String:UInt64},
+        offerParamsString: {String: String},
+        offerParamsUFix64: {String: UFix64},
+        offerParamsUInt64: {String: UInt64},
         paymentVaultType: Type,
         nftId: UInt64?,
-        paidOfferCuts: [FundsReceiver],
-        paidRoyalties: [FundsReceiver]
+        paidOfferCuts: [FundsReceiverInfo],
+        paidRoyalties: [FundsReceiverInfo]
     )
 
     /// OpenOffersStoragePath
@@ -76,11 +76,11 @@ pub contract Offers {
     /// The private location for FungibleToken provider vault.
     pub let FungibleTokenProviderVaultPath: PrivatePath
 
-    /// FundsReceiver
+    /// FundsReceiverInfo
     /// Datatype to represent the receiver of funds in terms of `receiver` address
     /// which actually receive funds and `amount` represents the number of FungibleTokens
     /// received.
-    pub struct FundsReceiver {
+    pub struct FundsReceiverInfo {
         /// The receiver for the payment.
         /// To support event emission, address is preferred over capability.
         pub let receiver: Address
@@ -119,9 +119,9 @@ pub contract Offers {
             self.amount = amount
         }
 
-        /// Allow to converts the `OfferCut` into `FundsReceiver`.
-        pub fun into(): FundsReceiver {
-            return FundsReceiver(
+        /// Allow to converts the `OfferCut` into `FundsReceiverInfo`.
+        pub fun into(): FundsReceiverInfo {
+            return FundsReceiverInfo(
                 receiver: self.receiver.address,
                 amount: self.amount
             )
@@ -146,8 +146,8 @@ pub contract Offers {
         pub let offerCuts: [OfferCut]
         /// Used to hold Offer metadata and offer type information
         pub let offerParamsString: {String: String}
-        pub let offerParamsUFix64: {String:UFix64}
-        pub let offerParamsUInt64: {String:UInt64}
+        pub let offerParamsUFix64: {String: UFix64}
+        pub let offerParamsUInt64: {String: UInt64}
 
         /// setToPurchased
         /// Irreversibly set this offer as purchased.
@@ -164,8 +164,8 @@ pub contract Offers {
             maximumOfferAmount: UFix64,
             offerCuts: [OfferCut],
             offerParamsString: {String: String},
-            offerParamsUFix64: {String:UFix64},
-            offerParamsUInt64: {String:UInt64},
+            offerParamsUFix64: {String: UFix64},
+            offerParamsUInt64: {String: UInt64},
             paymentVaultType: Type,
         ) {
             self.offerId = offerId
@@ -189,7 +189,7 @@ pub contract Offers {
                 // Add the cut amount to the total price
                 totalOfferCuts = totalOfferCuts + cut.amount
             }
-            assert(maximumOfferAmount > totalOfferCuts, message: "Inappropiate maximum offer amount")
+            assert(maximumOfferAmount > totalOfferCuts, message: "Inappropriate maximum offer amount")
         }
     }
 
@@ -232,9 +232,9 @@ pub contract Offers {
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
-            offerParamsString: {String:String},
-            offerParamsUFix64: {String:UFix64},
-            offerParamsUInt64: {String:UInt64},
+            offerParamsString: {String: String},
+            offerParamsUFix64: {String: UFix64},
+            offerParamsUInt64: {String: UInt64},
             resolverCapability: Capability<&{Resolver.ResolverPublic}>,
         ) {
             // TODO : Make sure the provided collection has the same type as given type.
@@ -243,7 +243,7 @@ pub contract Offers {
                 providerVaultCapability.check(): "Can not borrow providerVaultCapability"
                 resolverCapability.check(): "Can not borrow resolverCapability"
             }
-            assert(providerVaultCapability.borrow()!.balance >= maximumOfferAmount, message: "Insufficent balance in provided vault")
+            assert(providerVaultCapability.borrow()!.balance >= maximumOfferAmount, message: "Insufficient balance in provided vault")
             
             self.providerVaultCapability = providerVaultCapability
             self.nftReceiverCapability = nftReceiverCapability
@@ -263,7 +263,7 @@ pub contract Offers {
 
         /// accept
         /// Accept the offer if...
-        /// - Calling from an Offer that hasn't been purchased/desetoryed.
+        /// - Calling from an Offer that hasn't been purchased/destroyed.
         /// - Provided with a NFT matching the NFT id within the Offer details.
         /// - Provided with a NFT matching the NFT Type within the Offer details.
         ///
@@ -289,7 +289,7 @@ pub contract Offers {
             )
 
             var paidOfferCuts: [OfferCut] = []
-            var paidRoyalties: [FundsReceiver] = []
+            var paidRoyalties: [FundsReceiverInfo] = []
 
             assert(hasMeetingResolverCriteria, message: "Resolver failed, invalid NFT please check Offer criteria")
 
@@ -318,7 +318,7 @@ pub contract Offers {
                         let royaltyPayment <- toBePaidVault.withdraw(amount: royaltyAmount)
                         // Chances of failing the deposit is high if its type is different from the payment vault type
                         beneficiary.deposit(from: <- royaltyPayment)
-                        paidRoyalties.append(FundsReceiver(receiver: royalty.receiver.address, amount: royaltyAmount))
+                        paidRoyalties.append(FundsReceiverInfo(receiver: royalty.receiver.address, amount: royaltyAmount))
                     }
                 }
             }
@@ -413,18 +413,18 @@ pub contract Offers {
     /// offers and manage them like remove an offer.
     pub resource interface OfferManager {
 
-        /// proposeOffer
+        /// createOffer
         /// Facilitates the creation of an Offer.
         ///
-        pub fun proposeOffer(
+        pub fun createOffer(
             providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>,
             nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
-            offerParamsString: {String:String},
-            offerParamsUFix64: {String:UFix64},
-            offerParamsUInt64: {String:UInt64},
+            offerParamsString: {String: String},
+            offerParamsUFix64: {String: UFix64},
+            offerParamsUInt64: {String: UInt64},
             resolverCapability: Capability<&{Resolver.ResolverPublic}>,
         ): UInt64 
         
@@ -450,13 +450,13 @@ pub contract Offers {
         pub fun borrowOffer(offerId: UInt64): &Offer{OfferPublic}?
 
         /// cleanup
-        /// Remove already fullfilled offer.
+        /// Remove already fulfilled offer.
         ///
         pub fun cleanup(offerId: UInt64)
 
-        /// getAllOfferDetails
+        /// getAllOffersDetails
         /// Returns details of all the offers.
-        pub fun getAllOfferDetails(): {UInt64: Offers.OfferDetails}
+        pub fun getAllOffersDetails(): {UInt64: Offers.OfferDetails}
     }
 
     /// Definition of the APIs offered by the OfferManager resource and OpenOffersPublic.
@@ -464,18 +464,18 @@ pub contract Offers {
         /// The dictionary of Offers uuids to Offer resources.
         access(contract) var offers: @{UInt64: Offer}
 
-        /// proposeOffer
+        /// createOffer
         /// Facilitates the creation of Offer.
         ///
-        pub fun proposeOffer(
+        pub fun createOffer(
             providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>,
             nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
-            offerParamsString: {String:String},
-            offerParamsUFix64: {String:UFix64},
-            offerParamsUInt64: {String:UInt64},
+            offerParamsString: {String: String},
+            offerParamsUFix64: {String: UFix64},
+            offerParamsUInt64: {String: UInt64},
             resolverCapability: Capability<&{Resolver.ResolverPublic}>,
         ): UInt64 {
             let offer <- create Offer(
@@ -535,16 +535,16 @@ pub contract Offers {
             }
         }
 
-        /// getAllOfferDetails
+        /// getAllOffersDetails
         /// Returns details of all the offers.
-        pub fun getAllOfferDetails(): {UInt64: Offers.OfferDetails} {
-            var offerDetails: {UInt64: Offers.OfferDetails} = {}
+        pub fun getAllOffersDetails(): {UInt64: Offers.OfferDetails} {
+            var offersDetails: {UInt64: Offers.OfferDetails} = {}
             for offerId in self.offers.keys {
                 if let borrowedOffer = self.borrowOffer(offerId: offerId) {
-                    offerDetails.insert(key: offerId, borrowedOffer.getDetails())
+                    offersDetails.insert(key: offerId, borrowedOffer.getDetails())
                 }
             }
-            return offerDetails
+            return offersDetails
         }
 
         /// cleanup
@@ -587,9 +587,9 @@ pub contract Offers {
     }
 
     /// convertIntoFundsReceiver
-    /// Helper function to convert the `OfferCut` data type to `FundsReceiver`.
-    pub fun convertIntoFundsReceiver(cuts: [OfferCut]): [FundsReceiver] {
-        var receivers: [FundsReceiver] = []
+    /// Helper function to convert the `OfferCut` data type to `FundsReceiverInfo`.
+    pub fun convertIntoFundsReceiver(cuts: [OfferCut]): [FundsReceiverInfo] {
+        var receivers: [FundsReceiverInfo] = []
         for cut in cuts {
             receivers.append(cut.into())
         }

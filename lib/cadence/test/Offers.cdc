@@ -91,9 +91,9 @@ pub fun testCreateOpenOffers() {
     )
 }
 
-pub fun testFailToProposeOfferBecauseAccountDoesNotHaveOpenOffersResource() {
+pub fun testFailToCreateOfferBecauseAccountDoesNotHaveOpenOffersResource() {
     let fakeOfferee = blockchain.createAccount()
-    executeProposeOfferTx(
+    executeCreateOfferTx(
         fakeOfferee,
         fakeOfferee.address,
         10.0,
@@ -105,12 +105,12 @@ pub fun testFailToProposeOfferBecauseAccountDoesNotHaveOpenOffersResource() {
     )
 }
 
-pub fun testFailToProposeOfferBecauseAccountDoesNotHaveNFTReceiverCapability() {
+pub fun testFailToCreateOfferBecauseAccountDoesNotHaveNFTReceiverCapability() {
     let offeree = accounts["offeree"]!
     // Setup Token vault and top up with some tokens
     executeSetupVaultAndMintTokensTx(offeree, 1000.0)
-    // Execute proposeOffer transaction
-    executeProposeOfferTx(
+    // Execute createOffer transaction
+    executeCreateOfferTx(
         offeree,
         offeree.address,
         10.0,
@@ -123,12 +123,12 @@ pub fun testFailToProposeOfferBecauseAccountDoesNotHaveNFTReceiverCapability() {
 }
 
 
-pub fun testFailToProposeOfferBecauseAccountDoesNotHaveResolverCapability() {
+pub fun testFailToCreateOfferBecauseAccountDoesNotHaveResolverCapability() {
     let offeree = accounts["offeree"]!
     // Setup NFTReceiver Capability.
     executeSetupExampleNFTAccount(offeree)
-    // Execute proposeOffer transaction
-    executeProposeOfferTx(
+    // Execute createOffer transaction
+    executeCreateOfferTx(
         offeree,
         offeree.address,
         10.0,
@@ -150,10 +150,10 @@ pub fun testSetupResolver() {
     )
 }
 
-pub fun testFailToProposeOfferBecauseMaximumOfferAmountIsZero() {
+pub fun testFailToCreateOfferBecauseMaximumOfferAmountIsZero() {
     let offeree = accounts["offeree"]!
-    // Execute proposeOffer transaction
-    executeProposeOfferTx(
+    // Execute createOffer transaction
+    executeCreateOfferTx(
         offeree,
         offeree.address,
         0.0,
@@ -165,10 +165,10 @@ pub fun testFailToProposeOfferBecauseMaximumOfferAmountIsZero() {
     )
 }
 
-// pub fun testFailToProposeOfferBecauseInsufficientBalance() {
+// pub fun testFailToCreateOfferBecauseInsufficientBalance() {
 //     let offeree = accounts["offeree"]!
-//     // Execute proposeOffer transaction
-//     executeProposeOfferTx(
+//     // Execute createOffer transaction
+//     executeCreateOfferTx(
 //         offeree,
 //         offeree.address,
 //         1500.0,
@@ -180,7 +180,7 @@ pub fun testFailToProposeOfferBecauseMaximumOfferAmountIsZero() {
 //     )
 // }
 
-pub fun testProposeOffer() {
+pub fun testCreateOffer() {
     let offeree = accounts["offeree"]!
     let cutReceiver1 = accounts["cutReceiver1"]!
     let cutReceiver2 = accounts["cutReceiver2"]!
@@ -188,8 +188,8 @@ pub fun testProposeOffer() {
     // Setup the receiver of fungible token
     executeSetupVaultAndMintTokensTx(cutReceiver1, 0.0)
     executeSetupVaultAndMintTokensTx(cutReceiver2, 0.0)
-    // Execute proposeOffer transaction
-    executeProposeOfferTx(
+    // Execute createOffer transaction
+    executeCreateOfferTx(
         offeree,
         offeree.address,
         150.0,
@@ -330,7 +330,7 @@ pub fun executeSetupResolverTx(_ signer: Test.Account) {
     )
 }
 
-pub fun executeProposeOfferTx(
+pub fun executeCreateOfferTx(
     _ signer: Test.Account,
     _ nftReceiver: Address,
     _ maximumOfferAmount: UFix64,
