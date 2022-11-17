@@ -15,17 +15,16 @@ pub contract Resolver {
         /// Checks whether given items follows the same constraints as given offer.  
         ///
         /// @param item: NFT which needs to be checked
-        /// @param offerParamsString: Dictionary that contains the trait of NFT in `String` datatype.
-        /// @param offerParamsUInt64: Dictionary that contains the trait of NFT in `UInt64` datatype.
-        /// @param offerParamsUFix64: Dictionary that contains the trait of NFT in `UFix64` datatype.
+        /// @param offerFilters: Dictionary that contains the trait of NFT in `AnyStruct` datatype.
         /// @return A boolean that indicates whether given `item` honors the resolver or not.
         ///
         pub fun checkOfferResolver(
          item: &{NonFungibleToken.INFT, MetadataViews.Resolver},
-         offerParamsString: {String: String},
-         offerParamsUInt64: {String: UInt64},
-         offerParamsUFix64: {String: UFix64}
+         offerFilters: {String: AnyStruct}
         ): Bool
+
+        /// Return supported types of the different filter honored by the Resolver.
+        pub fun getValidOfferFilterTypes(): {String: String}
     }
 
     pub fun getResolverPublicPath(): PublicPath {

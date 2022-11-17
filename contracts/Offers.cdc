@@ -36,9 +36,7 @@ pub contract Offers {
         nftType: Type,
         maximumOfferAmount: UFix64,
         offerType: String,
-        offerParamsString: {String: String},
-        offerParamsUFix64: {String: UFix64},
-        offerParamsUInt64: {String: UInt64},
+        offerFilterNames: [String],
         paymentVaultType: Type,
         offerCuts: [FundsReceiverInfo]
     )
@@ -55,9 +53,7 @@ pub contract Offers {
         nftType: Type,
         maximumOfferAmount: UFix64,
         offerType: String,
-        offerParamsString: {String: String},
-        offerParamsUFix64: {String: UFix64},
-        offerParamsUInt64: {String: UInt64},
+        offerFilterNames: [String],
         paymentVaultType: Type,
         nftId: UInt64?,
         paidOfferCuts: [FundsReceiverInfo],
@@ -145,9 +141,7 @@ pub contract Offers {
         /// This specifies the division of payment between recipients.
         pub let offerCuts: [OfferCut]
         /// Used to hold Offer metadata and offer type information
-        pub let offerParamsString: {String: String}
-        pub let offerParamsUFix64: {String: UFix64}
-        pub let offerParamsUInt64: {String: UInt64}
+        pub let offerFilters: {String: AnyStruct}
 
         /// setToPurchased
         /// Irreversibly set this offer as purchased.
@@ -163,18 +157,14 @@ pub contract Offers {
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [OfferCut],
-            offerParamsString: {String: String},
-            offerParamsUFix64: {String: UFix64},
-            offerParamsUInt64: {String: UInt64},
+            offerFilters: {String: AnyStruct},
             paymentVaultType: Type,
         ) {
             self.offerId = offerId
             self.nftType = nftType
             self.maximumOfferAmount = maximumOfferAmount
             self.purchased = false
-            self.offerParamsString = offerParamsString
-            self.offerParamsUFix64 = offerParamsUFix64
-            self.offerParamsUInt64 = offerParamsUInt64
+            self.offerFilters = offerFilters
             self.paymentVaultType = paymentVaultType
             self.offerCuts = offerCuts
 
@@ -213,6 +203,11 @@ pub contract Offers {
         /// Return the amount of fungible tokens will be received by the offeree
         ///
         pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64
+
+        /// getValidOfferFilterTypes
+        /// Return the supported filter types
+        ///
+        pub fun getValidOfferFilterTypes(): {String: String}
     }
 
 
@@ -232,9 +227,7 @@ pub contract Offers {
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
-            offerParamsString: {String: String},
-            offerParamsUFix64: {String: UFix64},
-            offerParamsUInt64: {String: UInt64},
+            offerFilters: {String: AnyStruct},
             resolverCapability: Capability<&{Resolver.ResolverPublic}>,
         ) {
             // TODO : Make sure the provided collection has the same type as given type.
@@ -254,9 +247,7 @@ pub contract Offers {
                 nftType: nftType,
                 maximumOfferAmount: maximumOfferAmount,
                 offerCuts: offerCuts,
-                offerParamsString: offerParamsString,
-                offerParamsUFix64: offerParamsUFix64,
-                offerParamsUInt64: offerParamsUInt64,
+                offerFilters: offerFilters,
                 paymentVaultType: providerVaultCapability.getType(),
             )
         }
@@ -283,9 +274,7 @@ pub contract Offers {
             let providerVaultCap = self.providerVaultCapability.borrow() ?? panic("Failed to borrow providerVaultCapability")
             let hasMeetingResolverCriteria = resolverCap.checkOfferResolver(
                 item: &item as &{NonFungibleToken.INFT, MetadataViews.Resolver},
-                offerParamsString: self.details.offerParamsString,
-                offerParamsUInt64: self.details.offerParamsUInt64,
-                offerParamsUFix64: self.details.offerParamsUFix64,
+                offerFilters: self.details.offerFilters
             )
 
             var paidOfferCuts: [OfferCut] = []
@@ -336,10 +325,8 @@ pub contract Offers {
                 offerId: self.details.offerId,
                 nftType: self.details.nftType,
                 maximumOfferAmount: self.details.maximumOfferAmount,
-                offerType: self.details.offerParamsString["_type"] ?? "unknown",
-                offerParamsString: self.details.offerParamsString,
-                offerParamsUFix64: self.details.offerParamsUFix64,
-                offerParamsUInt64: self.details.offerParamsUInt64,
+                offerType: self.details.offerFilters["_type"] as! String? ?? "unknown",
+                offerFilterNames: self.details.offerFilters.keys,
                 paymentVaultType: self.details.paymentVaultType,
                 nftId: nftId,
                 paidOfferCuts: Offers.convertIntoFundsReceiver(cuts: paidOfferCuts),
@@ -352,6 +339,13 @@ pub contract Offers {
         ///
         pub fun getDetails(): OfferDetails {
             return self.details
+        }
+
+        /// getValidOfferFilterTypes
+        /// Return the supported filter types
+        ///
+        pub fun getValidOfferFilterTypes(): {String: String} {
+            return self.resolverCapability.borrow()!.getValidOfferFilterTypes()
         }
 
         /// getExpectedPaymentToOfferee
@@ -391,10 +385,8 @@ pub contract Offers {
                     offerId: self.details.offerId,
                     nftType: self.details.nftType,
                     maximumOfferAmount: self.details.maximumOfferAmount,
-                    offerType: self.details.offerParamsString["_type"] ?? "unknown",
-                    offerParamsString: self.details.offerParamsString,
-                    offerParamsUFix64: self.details.offerParamsUFix64,
-                    offerParamsUInt64: self.details.offerParamsUInt64,
+                    offerType: self.details.offerFilters["_type"] as! String? ?? "unknown",
+                    offerFilterNames: self.details.offerFilters.keys,
                     paymentVaultType: self.details.paymentVaultType,
                     nftId: nil,
                     paidOfferCuts: [],
@@ -422,9 +414,7 @@ pub contract Offers {
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
-            offerParamsString: {String: String},
-            offerParamsUFix64: {String: UFix64},
-            offerParamsUInt64: {String: UInt64},
+            offerFilters: {String: AnyStruct},
             resolverCapability: Capability<&{Resolver.ResolverPublic}>,
         ): UInt64 
         
@@ -473,9 +463,7 @@ pub contract Offers {
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
-            offerParamsString: {String: String},
-            offerParamsUFix64: {String: UFix64},
-            offerParamsUInt64: {String: UInt64},
+            offerFilters: {String: AnyStruct},
             resolverCapability: Capability<&{Resolver.ResolverPublic}>,
         ): UInt64 {
             let offer <- create Offer(
@@ -484,9 +472,7 @@ pub contract Offers {
                 nftType: nftType,
                 maximumOfferAmount: maximumOfferAmount,
                 offerCuts: offerCuts,
-                offerParamsString: offerParamsString,
-                offerParamsUFix64: offerParamsUFix64,
-                offerParamsUInt64: offerParamsUInt64,
+                offerFilters: offerFilters,
                 resolverCapability: resolverCapability,
             )
 
@@ -500,10 +486,8 @@ pub contract Offers {
                 offerId: offerResourceID,
                 nftType: nftType,
                 maximumOfferAmount: maximumOfferAmount,
-                offerType: offerParamsString["_type"] ?? "unknown",
-                offerParamsString: offerParamsString,
-                offerParamsUFix64: offerParamsUFix64,
-                offerParamsUInt64: offerParamsUInt64,
+                offerType: offerFilters["_type"] as! String? ?? "unknown",
+                offerFilterNames: offerFilters.keys,
                 paymentVaultType: providerVaultCapability.getType(),
                 offerCuts: Offers.convertIntoFundsReceiver(cuts: offerCuts)
             )

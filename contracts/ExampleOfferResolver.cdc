@@ -13,18 +13,17 @@ pub contract ExampleOfferResolver {
         /// Function returns TRUE if the provided nft item passes the criteria for exchange
         pub fun checkOfferResolver(
          item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
-         offerParamsString: {String:String},
-         offerParamsUInt64: {String:UInt64},
-         offerParamsUFix64: {String:UFix64}): Bool {
-            if offerParamsString["resolver"] == Resolver.ResolverType.NFT.rawValue.toString() {
-                assert(item.id.toString() == offerParamsString["nftId"], message: "item NFT does not have specified ID")
+         offerFilters: {String: AnyStruct}
+         ): Bool {
+            if offerFilters["resolver"]! as! String == Resolver.ResolverType.NFT.rawValue.toString() {
+                assert(item.id.toString() == offerFilters["nftId"]! as! String, message: "item NFT does not have specified ID")
                 return true
-            } else if offerParamsString["resolver"] == Resolver.ResolverType.MetadataViewsEditions.rawValue.toString() {
+            } else if offerFilters["resolver"]! as! String == Resolver.ResolverType.MetadataViewsEditions.rawValue.toString() {
                 if let views = item.resolveView(Type<MetadataViews.Editions>()) {
                     let editions = views as! [MetadataViews.Edition]
                     var hasCorrectMetadataView = false
                     for edition in editions {
-                        if edition.name == offerParamsString["editionName"] {
+                        if edition.name == offerFilters["editionName"]! as! String {
                             hasCorrectMetadataView = true
                         }
                     }
@@ -40,6 +39,14 @@ pub contract ExampleOfferResolver {
             return false
         }
 
+        /// Return supported types of the different filter honored by the Resolver.
+        pub fun getValidOfferFilterTypes(): {String: String} {
+            return {
+                "resolver": "String",
+                "nftId": "String",
+                "editionName": "String"
+            }
+        }
     }
 
     pub fun createOfferResolver(): @OfferResolver {

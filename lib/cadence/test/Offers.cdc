@@ -207,6 +207,16 @@ pub fun testCreateOffer() {
     assert(maximumOfferAmount == 150.0, message: "Incorrect Offer set")
 }
 
+// pub fun testGetValidOfferFilterTypes() {
+//     let offeree = accounts["offeree"]!
+//     let offerId = getOfferId(offeree.address, 0)
+//     let validOfferFilterTypes = getValidOfferFilterTypes(offeree.address, offerId)
+//     assert(validOfferFilterTypes.length == 3, message: "Incorrect length")
+//     for key in validOfferFilterTypes.keys {
+//         assert(validOfferFilterTypes[key]! == "String", message: "Incorrect type provided")
+//     }
+// }
+
 pub fun testAcceptTheOffer() {
     let acceptor = accounts["offerAcceptor"]!
     let offeree = accounts["offeree"]!
@@ -336,13 +346,13 @@ pub fun executeCreateOfferTx(
     _ maximumOfferAmount: UFix64,
     _ cutReceivers: [Address],
     _ cuts: [UFix64],
-    _ offerParamsString: {String: String},
+    _ offerFilters: {String: String},
     _ resolverRefProvider: Address,
     _ expectedError: String?
 ) {
     let txCode = Test.readFile("../../../transactions/propose_offer.cdc")
     assert(
-        txExecutor(txCode, [signer], [nftReceiver, maximumOfferAmount, cutReceivers, cuts, offerParamsString, resolverRefProvider], expectedError),
+        txExecutor(txCode, [signer], [nftReceiver, maximumOfferAmount, cutReceivers, cuts, offerFilters, resolverRefProvider], expectedError),
         message: "Failed to propose offer"
     )
 }
@@ -498,4 +508,9 @@ pub fun getExpectedPaymentToOfferee(
 ): UFix64 {
     let scriptResult = scriptExecutor("../../../scripts/get_expected_payment_to_offeree.cdc", [offerId, offerCreator, offereeAddress, nftId, collectionPublicPath])
     return scriptResult! as! UFix64
+}
+
+pub fun getValidOfferFilterTypes(_ account: Address, _ offerId: UInt64): {String: String} {
+    let scriptResult = scriptExecutor("../../../scripts/get_valid_offer_filter_types.cdc", [account, offerId])
+    return scriptResult! as! {String: String}
 }
