@@ -165,6 +165,9 @@ pub fun testFailToCreateOfferBecauseMaximumOfferAmountIsZero() {
     )
 }
 
+/// Keeping below test case commented because current cadence test framework doesn't support
+/// to test the failure of the transaction.
+
 // pub fun testFailToCreateOfferBecauseInsufficientBalance() {
 //     let offeree = accounts["offeree"]!
 //     // Execute createOffer transaction
@@ -195,7 +198,7 @@ pub fun testCreateOffer() {
         150.0,
         [cutReceiver1.address, cutReceiver2.address],
         [12.0, 13.0],
-        {"resolver": "0", "nftId": "0"},
+        {"resolver": UInt8(0), "nftId": UInt64(0)},
         offeree.address,
         nil
     )
@@ -206,6 +209,9 @@ pub fun testCreateOffer() {
     assert(getNoOfOfferCreated(offeree.address) == 1, message: "Incorrect creation of offer")
     assert(maximumOfferAmount == 150.0, message: "Incorrect Offer set")
 }
+
+/// Keeping below test case commented because current cadence test framework doesn't support
+/// to receive the disctionary as the return value from the scripts.
 
 // pub fun testGetValidOfferFilterTypes() {
 //     let offeree = accounts["offeree"]!
@@ -261,12 +267,30 @@ pub fun testAcceptTheOffer() {
         nil
     )
 
-    assert(getBalance(royaltyReceiver1.address) == 12.5, message: "Incorrect balance send to royalty receiver 1 \n Expected 12.5 but got - ".concat((getBalance(royaltyReceiver1.address)).toString()))
-    assert(getBalance(royaltyReceiver2.address) == 25.0, message: "Incorrect balance send to royalty receiver 2 \n Expected 25.0 but got - ".concat((getBalance(royaltyReceiver2.address)).toString()))
-    assert(getBalance(acceptor.address) == 87.5, message: "Incorrect balance send to acceptor \n Expected 87.5 but got - ".concat((getBalance(acceptor.address)).toString()))
-    assert(getBalance(cutReceiver1.address) == 12.0, message: "Incorrect balance send to cut receiver 1 \n Expected 12.0 but got - ".concat((getBalance(cutReceiver1.address)).toString()))
-    assert(getBalance(cutReceiver2.address) == 13.0, message: "Incorrect balance send to cut receiver 1 \n Expected 13.0 but got - ".concat((getBalance(cutReceiver2.address)).toString()))
-    assert(getLatestCollectionId(offeree.address, /public/exampleNFTCollection) == 0, message: "Incorrect NFT get transferred")
+    assert(
+        getBalance(royaltyReceiver1.address) == 12.5,
+        message: "Incorrect balance send to royalty receiver 1 \n Expected 12.5 but got - ".concat((getBalance(royaltyReceiver1.address)).toString())
+    )
+    assert(
+        getBalance(royaltyReceiver2.address) == 25.0,
+        message: "Incorrect balance send to royalty receiver 2 \n Expected 25.0 but got - ".concat((getBalance(royaltyReceiver2.address)).toString())
+    )
+    assert(
+        getBalance(acceptor.address) == 87.5,
+        message: "Incorrect balance send to acceptor \n Expected 87.5 but got - ".concat((getBalance(acceptor.address)).toString())
+    )
+    assert(
+        getBalance(cutReceiver1.address) == 12.0,
+        message: "Incorrect balance send to cut receiver 1 \n Expected 12.0 but got - ".concat((getBalance(cutReceiver1.address)).toString())
+    )
+    assert(
+        getBalance(cutReceiver2.address) == 13.0,
+        message: "Incorrect balance send to cut receiver 1 \n Expected 13.0 but got - ".concat((getBalance(cutReceiver2.address)).toString())
+    )
+    assert(
+        getLatestCollectionId(offeree.address, /public/exampleNFTCollection) == 0,
+        message: "Incorrect NFT get transferred"
+    )
 }
 
 
@@ -346,7 +370,7 @@ pub fun executeCreateOfferTx(
     _ maximumOfferAmount: UFix64,
     _ cutReceivers: [Address],
     _ cuts: [UFix64],
-    _ offerFilters: {String: String},
+    _ offerFilters: {String: AnyStruct},
     _ resolverRefProvider: Address,
     _ expectedError: String?
 ) {

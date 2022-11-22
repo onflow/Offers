@@ -5,7 +5,7 @@ pub contract Resolver {
     /// Current list of supported resolution rules.
     pub enum ResolverType: UInt8 {
         pub case NFT
-        pub case MetadataViewsEditions
+        pub case MetadataViews
     }
 
     /// Public resource interface that defines a method signature for checkOfferResolver

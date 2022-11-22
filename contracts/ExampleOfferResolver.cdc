@@ -15,35 +15,40 @@ pub contract ExampleOfferResolver {
          item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver},
          offerFilters: {String: AnyStruct}
          ): Bool {
-            if offerFilters["resolver"]! as! String == Resolver.ResolverType.NFT.rawValue.toString() {
-                assert(item.id.toString() == offerFilters["nftId"]! as! String, message: "item NFT does not have specified ID")
-                return true
-            } else if offerFilters["resolver"]! as! String == Resolver.ResolverType.MetadataViewsEditions.rawValue.toString() {
-                if let views = item.resolveView(Type<MetadataViews.Editions>()) {
+
+            let resolver = offerFilters["resolver"]! as? UInt8 ?? panic("resolver value is missing or non UInt8 resolver")
+            switch resolver {
+
+                case Resolver.ResolverType.NFT.rawValue:
+                    let nftId = offerFilters["nftId"]! as? UInt64 ?? panic("nftId value is missing or non UInt64 nftId")
+                    assert(item.id == nftId, message: "item NFT does not have specified ID")
+                    return true
+
+                case Resolver.ResolverType.MetadataViews.rawValue:
+                    let views = item.resolveView(Type<MetadataViews.Editions>()) 
+                        ?? panic("NFT does not use MetadataViews.Editions")
                     let editions = views as! [MetadataViews.Edition]
                     var hasCorrectMetadataView = false
                     for edition in editions {
                         if edition.name == offerFilters["editionName"]! as! String {
                             hasCorrectMetadataView = true
+                            break
                         }
                     }
                     assert(hasCorrectMetadataView == true, message: "editionId does not exist on NFT")
                     return true
-                } else {
-                    panic("NFT does not use MetadataViews.Editions")
-                }
-            } else {
-                panic("Invalid Resolver on Offer")
-            }
 
+                default:
+                    panic("Invalid Resolver on given offer, Resolver received value is".concat(resolver.toString()))
+            }
             return false
         }
 
         /// Return supported types of the different filter honored by the Resolver.
         pub fun getValidOfferFilterTypes(): {String: String} {
             return {
-                "resolver": "String",
-                "nftId": "String",
+                "resolver": "UInt8",
+                "nftId": "UInt64",
                 "editionName": "String"
             }
         }
