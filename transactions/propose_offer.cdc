@@ -9,7 +9,7 @@ import ExampleNFT from "../contracts/utility/ExampleNFT.cdc"
 transaction(nftReceiver: Address, maximumOfferAmount: UFix64, cutReceivers: [Address], cuts:[UFix64], offerFilters: {String: AnyStruct}, resolverRefProvider: Address) {
     let offerManager: &Offers.OpenOffers{Offers.OfferManager}
     let providerVaultCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
-    let nftReceiverCap: Capability<&{NonFungibleToken.CollectionPublic}>
+    let nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
     let resolverCap: Capability<&{Resolver.ResolverPublic}>
     var offerCuts: [Offers.OfferCut]
 
@@ -28,7 +28,7 @@ transaction(nftReceiver: Address, maximumOfferAmount: UFix64, cutReceivers: [Add
         self.providerVaultCap = acct.getCapability<&{FungibleToken.Provider, FungibleToken.Balance}>(Offers.FungibleTokenProviderVaultPath)
 
         // Receiver capability for the NFT.
-        self.nftReceiverCap = getAccount(nftReceiver).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
+        self.nftReceiverCap = getAccount(nftReceiver).getCapability<&{NonFungibleToken.Receiver}>(ExampleNFT.CollectionPublicPath)
         assert(self.nftReceiverCap.check(), message: "NFT receiver capability does not exists")
 
         self.resolverCap = getAccount(resolverRefProvider).getCapability<&{Resolver.ResolverPublic}>(Resolver.getResolverPublicPath())

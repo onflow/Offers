@@ -208,6 +208,11 @@ pub contract Offers {
         /// Return the supported filter types
         ///
         pub fun getValidOfferFilterTypes(): {String: String}
+
+        /// isGivenItemMatchesOffer
+        /// Checks whether the given item respect the provided offer or not.
+        ///
+        pub fun isGivenItemMatchesOffer(item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver}): Bool
     }
 
 
@@ -217,13 +222,13 @@ pub contract Offers {
         /// The vault which will handle the payment if the Offer is accepted.
         access(contract) let providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
         /// Receiver address for the NFT when/if the Offer is accepted.
-        access(contract) let nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>
+        access(contract) let nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>
         /// Resolver capability for the offer type
         access(contract) let resolverCapability: Capability<&{Resolver.ResolverPublic}>
 
         init(
             providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>,
-            nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
+            nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
@@ -376,6 +381,15 @@ pub contract Offers {
             return self.details.maximumOfferAmount - totalRoyaltyPayment - totalCutPayment
         }
 
+        /// isGivenItemMatchesOffer
+        /// Checks whether the given item respect the provided offer or not.
+        ///
+        pub fun isGivenItemMatchesOffer(item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver}): Bool {
+            return  self.resolverCapability.check() ? 
+                    self.resolverCapability.borrow()!.checkOfferResolver(item: item, offerFilters: self.details.offerFilters) :
+                    false
+        }
+
         destroy() {
             if !self.details.purchased {
                 emit OfferCompleted(
@@ -410,7 +424,7 @@ pub contract Offers {
         ///
         pub fun createOffer(
             providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>,
-            nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
+            nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
@@ -459,7 +473,7 @@ pub contract Offers {
         ///
         pub fun createOffer(
             providerVaultCapability: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>,
-            nftReceiverCapability: Capability<&{NonFungibleToken.CollectionPublic}>,
+            nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             offerCuts: [Offers.OfferCut],
