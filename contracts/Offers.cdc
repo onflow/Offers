@@ -527,7 +527,7 @@ pub contract Offers {
                 }
             }
 
-            return self.details.maximumOfferAmount - totalRoyaltyPayment - totalCutPayment
+            return self.details.maximumOfferAmount - totalRoyaltyPayment - totalCutPayment - self.details.commissionAmount
         }
 
         /// getAllowedCommissionReceivers
@@ -629,11 +629,11 @@ pub contract Offers {
         ///
         pub fun cleanup(offerId: UInt64)
 
-        /// cleanupGhostOffers
+        /// cleanupGhostOffer
         /// Remove an Offer if it is not accepted yet and its provider balance
         /// got below the `allowedWithdrawableBalance`.
         ///
-        pub fun cleanupGhostOffers(offerId: UInt64)
+        pub fun cleanupGhostOffer(offerId: UInt64)
 
         /// getAllOffersDetails
         /// Returns details of all the offers.
@@ -756,10 +756,10 @@ pub contract Offers {
             destroy offer
         }
 
-        /// cleanupGhostOffers
+        /// cleanupGhostOffer
         /// Remove an Offer if it is not accepted yet and its provider balance
         /// got below the `allowedWithdrawableBalance`.
-        pub fun cleanupGhostOffers(offerId: UInt64) {
+        pub fun cleanupGhostOffer(offerId: UInt64) {
             pre {
                 self.offers[offerId] != nil: "Offer with given id does not exists"
             }

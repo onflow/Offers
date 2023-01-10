@@ -6,15 +6,26 @@ import ExampleToken from "../contracts/utility/ExampleToken.cdc"
 import ExampleNFT from "../contracts/utility/ExampleNFT.cdc"
 
 /// This version of transaction is implemented because cadence test framework doesn't support importing of contract.
-transaction(nftReceiver: Address, maximumOfferAmount: UFix64, cutReceivers: [Address], cuts:[UFix64], offerFilters: {String: AnyStruct}, resolverRefProvider: Address) {
+transaction(
+    nftReceiver: Address,
+    maximumOfferAmount: UFix64,
+    cutReceivers: [Address],
+    cuts:[UFix64],
+    offerFilters: {String: AnyStruct},
+    resolverRefProvider: Address,
+    commissionAmount: UFix64,
+    commissionReceivers: [Address]?
+) {
     let offerManager: &Offers.OpenOffers{Offers.OfferManager}
     let providerVaultCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
     let nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
     let resolverCap: Capability<&{Resolver.ResolverPublic}>
     var offerCuts: [Offers.OfferCut]
+    var commissionRecevs: [Capability<&{FungibleToken.Receiver}>]
 
     prepare(acct: AuthAccount) {
         self.offerCuts = []
+        self.commissionRecevs = []
         self.offerManager = acct.borrow<&Offers.OpenOffers{Offers.OfferManager}>(from: Offers.OpenOffersStoragePath)
             ?? panic("Given account does not possess OfferManager resource")
 
@@ -34,14 +45,27 @@ transaction(nftReceiver: Address, maximumOfferAmount: UFix64, cutReceivers: [Add
         self.resolverCap = getAccount(resolverRefProvider).getCapability<&{Resolver.ResolverPublic}>(Resolver.getResolverPublicPath())
         assert(self.resolverCap.check(), message: "Resolver capability does not exists")
 
+        var amountToBePaid: UFix64 = 0.0
+
         for index, receiver in cutReceivers {
             let receiverCap = getAccount(receiver).getCapability<&{FungibleToken.Receiver}>(ExampleToken.ReceiverPublicPath)
             assert(receiverCap.check(), message: "Invalid capability of the cut receiver")
             assert(cuts[index] != 0.0, message: "Zero cut value is not allowed")
+            amountToBePaid = amountToBePaid + cuts[index]
             self.offerCuts.append(Offers.OfferCut(
                 receiver: receiverCap,
                 amount: cuts[index]
             ))
+        }
+        assert(amountToBePaid + commissionAmount > maximumOfferAmount, message: "Insuffcient offer amount")
+
+        // Create array of commissionReceivers
+        if let cRecvs = commissionReceivers {
+            for receiver in cRecvs {
+                let receiverCap = getAccount(receiver).getCapability<&{FungibleToken.Receiver}>(ExampleToken.ReceiverPublicPath)
+                assert(receiverCap.check(), message: "Invalid capability of the commission receiver")
+                self.commissionRecevs.append(receiverCap)
+            }
         }
     }
 
@@ -51,14 +75,19 @@ transaction(nftReceiver: Address, maximumOfferAmount: UFix64, cutReceivers: [Add
     }
 
     execute {
+        let fundProvider = Offers.FundProvider(cap: self.providerVaultCap, withdrawableBalance: maximumOfferAmount)
+
         self.offerManager.createOffer(
-            providerVaultCapability: self.providerVaultCap,
+            fundProvider: fundProvider,
             nftReceiverCapability: self.nftReceiverCap,
             nftType: Type<@ExampleNFT.NFT>(),
             maximumOfferAmount: maximumOfferAmount,
+            commissionAmount: commissionAmount,
             offerCuts: self.offerCuts,
             offerFilters: offerFilters,
-            resolverCapability: self.resolverCap
+            resolverCapability: self.resolverCap,
+            paymentHandlerCapability: nil,
+            commissionReceivers: self.commissionRecevs.length == 0 ? nil : self.commissionRecevs
         )
     }
 }
