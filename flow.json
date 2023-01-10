@@ -25,7 +25,10 @@
 		"ExampleNFT": "./contracts/utility/ExampleNFT.cdc",
 		"ExampleOfferResolver": "./contracts/ExampleOfferResolver.cdc",
 		"Offers": "./contracts/Offers.cdc",
-		"Resolver": "./contracts/Resolver.cdc"
+		"Resolver": "./contracts/Resolver.cdc",
+		"PaymentHandler": "./contracts/PaymentHandler.cdc",
+		"DefaultPaymentHandler": "./contracts/DefaultPaymentHandler.cdc",
+		"FungibleTokenSwitchboard": "./contracts/utility/FungibleTokenSwitchboard.cdc"
 	},
 	"networks": {
 		"emulator": "127.0.0.1:3569",
@@ -40,7 +43,17 @@
 	},
 	"deployments": {
 		"emulator" : {
-			"emulator-account": ["NonFungibleToken", "FungibleToken", "MetadataViews", "Resolver", "ExampleOfferResolver", "Offers"]
+			"emulator-account": [
+				"NonFungibleToken",
+				"FungibleToken",
+				"MetadataViews",
+				"Resolver",
+				"ExampleOfferResolver",
+				"FungibleTokenSwitchboard",
+				"PaymentHandler",
+				"DefaultPaymentHandler",
+				"Offers"
+			]
 		}
 	}
 }

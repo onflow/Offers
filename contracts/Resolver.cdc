@@ -2,12 +2,7 @@ import NonFungibleToken from "./utility/NonFungibleToken.cdc"
 import MetadataViews from "./utility/MetadataViews.cdc"
 
 pub contract Resolver {
-    /// Current list of supported resolution rules.
-    pub enum ResolverType: UInt8 {
-        pub case NFT
-        pub case MetadataViews
-    }
-
+    
     /// Public resource interface that defines a method signature for checkOfferResolver
     /// which is used within the Resolver resource for offer acceptance validation
     pub resource interface ResolverPublic {

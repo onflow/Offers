@@ -6,6 +6,12 @@ pub contract ExampleOfferResolver {
 
     pub let ExampleOfferResolverStoragePath: StoragePath
 
+    /// Current list of supported resolution rules.
+    pub enum ResolverType: UInt8 {
+        pub case NFT
+        pub case MetadataViews
+    }
+
     /// Resolver resource holds the Offer exchange resolution rules.
     pub resource OfferResolver: Resolver.ResolverPublic {
         /// checkOfferResolver
@@ -19,12 +25,12 @@ pub contract ExampleOfferResolver {
             let resolver = offerFilters["resolver"]! as? UInt8 ?? panic("resolver value is missing or non UInt8 resolver")
             switch resolver {
 
-                case Resolver.ResolverType.NFT.rawValue:
+                case ResolverType.NFT.rawValue:
                     let nftId = offerFilters["nftId"]! as? UInt64 ?? panic("nftId value is missing or non UInt64 nftId")
                     assert(item.id == nftId, message: "item NFT does not have specified ID")
                     return true
 
-                case Resolver.ResolverType.MetadataViews.rawValue:
+                case ResolverType.MetadataViews.rawValue:
                     let views = item.resolveView(Type<MetadataViews.Editions>()) 
                         ?? panic("NFT does not use MetadataViews.Editions")
                     let editions = views as! [MetadataViews.Edition]
