@@ -1,9 +1,9 @@
 import Offers from "../contracts/Offers.cdc"
 import Resolver from "../contracts/Resolver.cdc"
-import FungibleToken from "../contracts/utility/FungibleToken.cdc"
-import NonFungibleToken from "../contracts/utility/NonFungibleToken.cdc"
-import ExampleToken from "../contracts/utility/ExampleToken.cdc"
-import ExampleNFT from "../contracts/utility/ExampleNFT.cdc"
+import FungibleToken from "../contracts/core/FungibleToken.cdc"
+import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
+import ExampleToken from "../contracts/core/ExampleToken.cdc"
+import ExampleNFT from "../contracts/core/ExampleNFT.cdc"
 
 /// This version of transaction is implemented because cadence test framework doesn't support importing of contract.
 transaction(
@@ -57,7 +57,7 @@ transaction(
                 amount: cuts[index]
             ))
         }
-        assert(amountToBePaid + commissionAmount > maximumOfferAmount, message: "Insuffcient offer amount")
+        assert(amountToBePaid + commissionAmount < maximumOfferAmount, message: "Insufficient offer amount")
 
         // Create array of commissionReceivers
         if let cRecvs = commissionReceivers {
@@ -67,10 +67,10 @@ transaction(
                 self.commissionRecevs.append(receiverCap)
             }
         }
+        log(self.nftReceiverCap.getType())
     }
 
     pre {
-        maximumOfferAmount > 0.0:  "Offer amount can not be zero"
         cutReceivers.length == cuts.length: "Invalid details of the cuts"
     }
 
@@ -91,3 +91,4 @@ transaction(
         )
     }
 }
+ 

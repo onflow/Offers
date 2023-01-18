@@ -7,6 +7,7 @@
 
 import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
 import ExampleToken from "../../../../../contracts/core/ExampleToken.cdc"
+import Offers from "../../../../../contracts/Offers.cdc"
 
 transaction(amount: UFix64, to: Address) {
 
@@ -16,11 +17,11 @@ transaction(amount: UFix64, to: Address) {
     prepare(signer: AuthAccount) {
 
         // Get a reference to the signer's stored vault
-        let vaultRef = signer.borrow<&ExampleToken.Vault>(from: ExampleToken.VaultStoragePath)
+        let senderCapRef = signer.getCapability<&{FungibleToken.Provider, FungibleToken.Balance}>(Offers.FungibleTokenProviderVaultPath).borrow()
 			?? panic("Could not borrow reference to the owner's Vault!")
 
         // Withdraw tokens from the signer's stored vault
-        self.sentVault <- vaultRef.withdraw(amount: amount)
+        self.sentVault <- senderCapRef.withdraw(amount: amount)
     }
 
     execute {

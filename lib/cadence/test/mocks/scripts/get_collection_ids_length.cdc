@@ -1,5 +1,5 @@
-import NonFungibleToken from "../../contracts/utility/NonFungibleToken.cdc"
-import ExampleNFT from "../../contracts/utility/ExampleNFT.cdc"
+import NonFungibleToken from "../../contracts/core/NonFungibleToken.cdc"
+import ExampleNFT from "../../contracts/core/ExampleNFT.cdc"
 
 /// Script to get NFT IDs in an account's collection
 ///

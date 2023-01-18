@@ -1,7 +1,7 @@
 import Offers from "../contracts/Offers.cdc"
-import NonFungibleToken from "../contracts/utility/NonFungibleToken.cdc"
-import MetadataViews from "../contracts/utility/MetadataViews.cdc"
-import ExampleNFT from "../contracts/utility/ExampleNFT.cdc"
+import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
+import MetadataViews from "../contracts/core/MetadataViews.cdc"
+import ExampleNFT from "../contracts/core/ExampleNFT.cdc"
 
 pub fun main(offerId: UInt64, offerCreator: Address, nftId: UInt64, nftAccountOwner: Address): Bool {
     let nftCollectionRef = getAccount(nftAccountOwner)

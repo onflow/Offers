@@ -1,6 +1,6 @@
 import PaymentHandler from "./PaymentHandler.cdc"
-import FungibleToken from "./utility/FungibleToken.cdc"
-import FungibleTokenSwitchboard from "./utility/FungibleTokenSwitchboard.cdc"
+import FungibleToken from "./core/FungibleToken.cdc"
+import FungibleTokenSwitchboard from "./core/FungibleTokenSwitchboard.cdc"
 
 pub contract DefaultPaymentHandler {
 
@@ -15,7 +15,7 @@ pub contract DefaultPaymentHandler {
         /// @return A boolean that indicates whether given `receiverCap` honors the handler or not.
         ///
         pub fun checkValidVaultType(receiverCap: Capability<&{FungibleToken.Receiver}>, allowedVaultType: Type) : Bool {
-            if receiverCap.getType() == allowedVaultType {
+            if receiverCap.borrow()!.getType() == allowedVaultType {
                 return true
             } else if receiverCap.isInstance(FungibleTokenSwitchboard.Switchboard.getType()) {
                 // Access the switchboard public capability to know whether the `allowedVaultType` is registered with switchboard or not.

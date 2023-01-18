@@ -1,6 +1,6 @@
 import Offers from "../../../../../contracts/Offers.cdc"
-import FungibleToken from "../../../../../contracts/utility/FungibleToken.cdc"
-import ExampleToken from "../../../../../contracts/utility/ExampleToken.cdc"
+import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
+import ExampleToken from "../../../../../contracts/core/ExampleToken.cdc"
 
 pub fun main(receivers: [Address], amounts: [UFix64]): [Offers.OfferCut] {
     var cuts : [Offers.OfferCut] = []

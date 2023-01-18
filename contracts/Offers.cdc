@@ -1,6 +1,6 @@
-import FungibleToken from "./utility/FungibleToken.cdc"
-import NonFungibleToken from "./utility/NonFungibleToken.cdc"
-import MetadataViews from "./utility/MetadataViews.cdc"
+import FungibleToken from "./core/FungibleToken.cdc"
+import NonFungibleToken from "./core/NonFungibleToken.cdc"
+import MetadataViews from "./core/MetadataViews.cdc"
 import PaymentHandler from "./PaymentHandler.cdc"
 import DefaultPaymentHandler from "./DefaultPaymentHandler.cdc"
 import Resolver from "./Resolver.cdc"
@@ -143,7 +143,7 @@ pub contract Offers {
 
         /// Return the type of provider capability
         pub fun getProviderType() : Type {
-            return self.providerCap.getType()
+            return self.providerCap.borrow()!.getType()
         }
 
         /// Return the provider balance
@@ -328,7 +328,8 @@ pub contract Offers {
             commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?
         ) {
             pre {
-                nftReceiverCapability.isInstance(nftType): "Invalid NFT receiver type"
+                // TDOD: Need to test this
+                // nftReceiverCapability.borrow()!.getType() == nftType: "Invalid NFT receiver type"
                 nftReceiverCapability.check(): "Can not borrow nftReceiverCapability"
                 resolverCapability.check(): "Can not borrow resolverCapability"
                 maximumOfferAmount == fundProvider.allowedWithdrawableBalance: "Mismatch in maximum offer amount and allowed withdrawable balance"
@@ -419,6 +420,8 @@ pub contract Offers {
                 }
             }
 
+            let effectiveBalanceAfterCommission = toBePaidVault.balance
+
             // Settle offer cuts
             for cut in self.details.offerCuts {
                 if let receiver = cut.receiver.borrow() {
@@ -436,7 +439,6 @@ pub contract Offers {
                 }
             }
 
-            let remainingAmount = toBePaidVault.balance
             let nftId = item.id
             // Check whether the NFT supports the royalties metadataView, If yes then honour the royalties.
             if item.getViews().contains(Type<MetadataViews.Royalties>()) {
@@ -444,7 +446,7 @@ pub contract Offers {
                 let royalties = (royaltiesRef as! MetadataViews.Royalties).getRoyalties()
                 for royalty in royalties {
                     if let beneficiary = royalty.receiver.borrow() {
-                        let royaltyAmount = royalty.cut * remainingAmount
+                        let royaltyAmount = royalty.cut * effectiveBalanceAfterCommission
                         // Make sure the given royalty reciever capability has the valid type
                         // If reciever doesn't have the valid capability type then their funds will be sent to `recieverCapability`
                         if self.paymentHandlerCapability.borrow()!.checkValidVaultType(receiverCap: royalty.receiver, allowedVaultType: self.details.paymentVaultType) {
@@ -508,26 +510,26 @@ pub contract Offers {
         pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64 {
             var totalCutPayment: UFix64 = 0.0
             var totalRoyaltyPayment: UFix64 = 0.0
+            let effectiveAmountAfterCommission = self.details.maximumOfferAmount - self.details.commissionAmount
             for cut in self.details.offerCuts {
                 if let receiver = cut.receiver.borrow() {
                     totalCutPayment = totalCutPayment + cut.amount
                 }
             }
 
-            let remainingAmount = self.details.maximumOfferAmount - totalCutPayment
             // Check whether the NFT supports the royalties metadataView, If yes then honour the royalties.
             if item.getViews().contains(Type<MetadataViews.Royalties>()) {
                 if let royaltiesRef = item.resolveView(Type<MetadataViews.Royalties>()) {
                     let royalties = (royaltiesRef as! MetadataViews.Royalties).getRoyalties()
                     for royalty in royalties {
                         if let recev = royalty.receiver.borrow() {
-                            totalRoyaltyPayment = totalRoyaltyPayment + royalty.cut * remainingAmount
+                            totalRoyaltyPayment = totalRoyaltyPayment + royalty.cut * effectiveAmountAfterCommission
                         }
                     }
                 }
             }
 
-            return self.details.maximumOfferAmount - totalRoyaltyPayment - totalCutPayment - self.details.commissionAmount
+            return effectiveAmountAfterCommission - totalRoyaltyPayment - totalCutPayment
         }
 
         /// getAllowedCommissionReceivers

@@ -1,6 +1,6 @@
-import NonFungibleToken from "../../../../../contracts/utility/NonFungibleToken.cdc"
-import ExampleNFT from "../../../../../contracts/utility/ExampleNFT.cdc"
-import MetadataViews from "../../../../../contracts/utility/MetadataViews.cdc"
+import NonFungibleToken from "../../../../../contracts/core/NonFungibleToken.cdc"
+import ExampleNFT from "../../../../../contracts/core/ExampleNFT.cdc"
+import MetadataViews from "../../../../../contracts/core/MetadataViews.cdc"
 
 /// This transaction is what an account would run
 /// to set itself up to receive NFTs
@@ -20,7 +20,7 @@ transaction {
         signer.save(<-collection, to: ExampleNFT.CollectionStoragePath)
 
         // create a public capability for the collection
-        signer.link<&{NonFungibleToken.CollectionPublic, ExampleNFT.ExampleNFTCollectionPublic, MetadataViews.ResolverCollection}>(
+        signer.link<&{NonFungibleToken.CollectionPublic, ExampleNFT.ExampleNFTCollectionPublic, MetadataViews.ResolverCollection, NonFungibleToken.Receiver}>(
             ExampleNFT.CollectionPublicPath,
             target: ExampleNFT.CollectionStoragePath
         )

@@ -7,7 +7,7 @@
 	},
 	"contracts": {
 		"FungibleToken": {
-			"source": "./contracts/utility/FungibleToken.cdc",
+			"source": "./contracts/core/FungibleToken.cdc",
 			"aliases": {
 				"mainnet": "0xf233dcee88fe0abe",
 				"testnet": "0x9a0766d93b6608b7",
@@ -15,20 +15,20 @@
 			}
 		},
 		"NonFungibleToken": {
-            "source": "./contracts/utility/NonFungibleToken.cdc",
+            "source": "./contracts/core/NonFungibleToken.cdc",
             "aliases": {
                 "emulator": "0xf8d6e0586b0a20c7",
                 "testnet": "0x631e88ae7f1d7c20"
             }
         },
-		"MetadataViews": "./contracts/utility/MetadataViews.cdc",
-		"ExampleNFT": "./contracts/utility/ExampleNFT.cdc",
+		"MetadataViews": "./contracts/core/MetadataViews.cdc",
+		"ExampleNFT": "./contracts/core/ExampleNFT.cdc",
 		"ExampleOfferResolver": "./contracts/ExampleOfferResolver.cdc",
 		"Offers": "./contracts/Offers.cdc",
 		"Resolver": "./contracts/Resolver.cdc",
 		"PaymentHandler": "./contracts/PaymentHandler.cdc",
 		"DefaultPaymentHandler": "./contracts/DefaultPaymentHandler.cdc",
-		"FungibleTokenSwitchboard": "./contracts/utility/FungibleTokenSwitchboard.cdc"
+		"FungibleTokenSwitchboard": "./contracts/core/FungibleTokenSwitchboard.cdc"
 	},
 	"networks": {
 		"emulator": "127.0.0.1:3569",

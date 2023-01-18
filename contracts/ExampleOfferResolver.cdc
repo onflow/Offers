@@ -1,6 +1,6 @@
 import Resolver from "./Resolver.cdc"
-import NonFungibleToken from "./utility/NonFungibleToken.cdc"
-import MetadataViews from "./utility/MetadataViews.cdc"
+import NonFungibleToken from "./core/NonFungibleToken.cdc"
+import MetadataViews from "./core/MetadataViews.cdc"
 
 pub contract ExampleOfferResolver {
 
@@ -27,8 +27,7 @@ pub contract ExampleOfferResolver {
 
                 case ResolverType.NFT.rawValue:
                     let nftId = offerFilters["nftId"]! as? UInt64 ?? panic("nftId value is missing or non UInt64 nftId")
-                    assert(item.id == nftId, message: "item NFT does not have specified ID")
-                    return true
+                    return item.id == nftId
 
                 case ResolverType.MetadataViews.rawValue:
                     let views = item.resolveView(Type<MetadataViews.Editions>()) 
@@ -41,8 +40,7 @@ pub contract ExampleOfferResolver {
                             break
                         }
                     }
-                    assert(hasCorrectMetadataView == true, message: "editionId does not exist on NFT")
-                    return true
+                    return hasCorrectMetadataView == true
 
                 default:
                     panic("Invalid Resolver on given offer, Resolver received value is".concat(resolver.toString()))
