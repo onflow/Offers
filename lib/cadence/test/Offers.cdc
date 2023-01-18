@@ -485,9 +485,11 @@ pub fun testGhostListingScenario() {
     assert(getNoOfOfferCreated(offeror.address) == 1, message: "Incorrect creation of offer")
     assert(maximumOfferAmount == 150.0, message: "Incorrect Offer set")
 
+    // Step 1: Setup the receiver of fungible token
+    executeSetupVaultAndMintTokensTx(unknownReceiver, 0.0)
     // Move the funds from provider vault
     executeTransferFundsFromPrivateCapability(offeror, unknownReceiver.address, 150.0)
-
+   
     assert(
         getBalance(unknownReceiver.address) == 150.0,
         message: "Incorrect balance send to unknownReceiver receiver  \n Expected 150.0 but got - ".concat((getBalance(unknownReceiver.address)).toString())
