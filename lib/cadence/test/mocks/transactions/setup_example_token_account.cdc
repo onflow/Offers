@@ -4,34 +4,57 @@
 
 import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
 import ExampleToken from "../../../../../contracts/core/ExampleToken.cdc"
+import TestToken from "../contracts/TestToken.cdc"
 
-transaction {
+transaction(tokenType: UInt8) {
+
+    var vaultStoragePath: StoragePath
+    var vaultReceiverPath: PublicPath
+    var vaultBalancePath: PublicPath
 
     prepare(signer: AuthAccount) {
 
+        self.vaultStoragePath = ExampleToken.VaultStoragePath
+        self.vaultReceiverPath = ExampleToken.ReceiverPublicPath
+        self.vaultBalancePath = ExampleToken.BalancePublicPath
+
+        switch tokenType {
+            case 1: 
+                self.vaultStoragePath = ExampleToken.VaultStoragePath
+                self.vaultReceiverPath = ExampleToken.ReceiverPublicPath
+                self.vaultBalancePath = ExampleToken.BalancePublicPath
+
+            case 2:
+                self.vaultStoragePath = TestToken.VaultStoragePath
+                self.vaultReceiverPath = TestToken.ReceiverPublicPath
+                self.vaultBalancePath = TestToken.BalancePublicPath
+            default:
+                panic("Invalid token type")
+        }
+
         // Return early if the account already stores a ExampleToken Vault
-        if signer.borrow<&ExampleToken.Vault>(from: ExampleToken.VaultStoragePath) != nil {
+        if signer.borrow<&ExampleToken.Vault>(from: self.vaultStoragePath) != nil {
             return
         }
 
         // Create a new ExampleToken Vault and put it in storage
         signer.save(
             <-ExampleToken.createEmptyVault(),
-            to: ExampleToken.VaultStoragePath
+            to: self.vaultStoragePath
         )
 
         // Create a public capability to the Vault that only exposes
         // the deposit function through the Receiver interface
         signer.link<&ExampleToken.Vault{FungibleToken.Receiver}>(
-            ExampleToken.ReceiverPublicPath,
-            target: ExampleToken.VaultStoragePath
+            self.vaultReceiverPath,
+            target: self.vaultStoragePath
         )
 
         // Create a public capability to the Vault that only exposes
         // the balance field through the Balance interface
         signer.link<&ExampleToken.Vault{FungibleToken.Balance}>(
-            ExampleToken.BalancePublicPath,
-            target: ExampleToken.VaultStoragePath
+            self.vaultBalancePath,
+            target: self.vaultStoragePath
         )
     }
 }
