@@ -628,10 +628,10 @@ pub fun deploySmartContract(_ contractName: String, _ account: Test.Account, _ f
 
 pub fun getErrorMessagePointer(errorType: ErrorType) : Int {
     switch errorType {
-        case ErrorType.TX_PANIC: return 189
-        case ErrorType.TX_ASSERT: return 200
-        case ErrorType.TX_PRE: return 204
-        case ErrorType.CONTRACT_WITHDRAWBALANCE: return 677
+        case ErrorType.TX_PANIC: return 159
+        case ErrorType.TX_ASSERT: return 170
+        case ErrorType.TX_PRE: return 174
+        case ErrorType.CONTRACT_WITHDRAWBALANCE: return 647
         default: panic("Invalid error type")
     }
     return 0
@@ -647,7 +647,7 @@ pub fun txExecutor(_ txCode: String, _ signers: [Test.Account], _ arguments: [An
     let txResult = blockchain.executeTransaction(tx)
     if let err = txResult.error {
         if let expectedErrorMessage = expectedError {
-            // if expectedErrorType == ErrorType.CONTRACT_WITHDRAWBALANCE {
+            // if expectedErrorType == ErrorType.TX_PANIC {
             //     let ptr = getErrorMessagePointer(errorType: expectedErrorType!)
             //     let errMessage = err.message.slice(from: ptr, upTo: ptr + expectedErrorMessage.length)
             //     panic(errMessage)
