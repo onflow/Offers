@@ -26,7 +26,12 @@ transaction(vaultPath: StoragePath, receiverPath: PublicPath) {
         let capability = signer.link<&{FungibleToken.Receiver}>(
             MetadataViews.getRoyaltyReceiverPublicPath(),
             target: FungibleTokenSwitchboard.StoragePath
-        )! 
+        )!
+
+        signer.link<&{FungibleTokenSwitchboard.SwitchboardPublic}>(
+            FungibleTokenSwitchboard.PublicPath,
+            target: FungibleTokenSwitchboard.StoragePath
+        ) 
 
         // Make sure the capability is valid
         if !capability.check() { panic("Beneficiary capability is not valid!") }

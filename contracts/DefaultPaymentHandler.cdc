@@ -17,15 +17,10 @@ pub contract DefaultPaymentHandler {
         pub fun checkValidVaultType(receiverCap: Capability<&{FungibleToken.Receiver}>, allowedVaultType: Type) : Bool {
             if receiverCap.borrow()!.getType() == allowedVaultType {
                 return true
-            } else if receiverCap.isInstance(FungibleTokenSwitchboard.Switchboard.getType()) {
+            } else if receiverCap.borrow()!.isInstance(Type<@FungibleTokenSwitchboard.Switchboard>()) {
                 // Access the switchboard public capability to know whether the `allowedVaultType` is registered with switchboard or not.
                 if let switchboardPublicRef = getAccount(receiverCap.address).getCapability<&{FungibleTokenSwitchboard.SwitchboardPublic}>(FungibleTokenSwitchboard.PublicPath).borrow() {
-                    let acceptedTypes = switchboardPublicRef.getVaultTypes()
-                    for aType in acceptedTypes {
-                        if aType == allowedVaultType {
-                            return true
-                        }
-                    }
+                    return switchboardPublicRef.getVaultTypes().contains(allowedVaultType)
                 }
             }
             return false

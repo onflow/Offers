@@ -69,6 +69,7 @@ pub fun setup() {
         "./core/MetadataViews.cdc":accounts["MetadataViews"]!.address,
         "./core/FungibleTokenSwitchboard.cdc":accounts["FungibleTokenSwitchboard"]!.address,
         "./Resolver.cdc":accounts["Resolver"]!.address,
+        "../contracts/PaymentHandler.cdc":accounts["PaymentHandler"]!.address,
         "../contracts/TestToken.cdc":accounts["TestToken"]!.address,
         "../contracts/Offers.cdc": accounts["Offers"]!.address,
         "../contracts/Resolver.cdc": accounts["Resolver"]!.address,
@@ -324,7 +325,7 @@ pub fun testAcceptTheOffer() {
     assert(expectedPaymentToOffree == 76.5, message: "Incorrect balance send to acceptor \n Expected 76.5 but got - ".concat(expectedPaymentToOffree.toString()))
 }
 
-pub fun testProvidedNFTIsCompatibleWithOffer() {
+pub fun testProvidedNFTShouldNotBeCompatibleWithOffer() {
     let acceptor = accounts["offerAcceptor"]!
     let offeror = accounts["offeror"]!
     let minter = accounts["ExampleNFT"]!
@@ -540,13 +541,13 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
     //
     // 1. RoyaltyRecv1 would use FungibleTokenSwitchboard and correct token vault to receive funds
     // 1.a Setup vault for ExampleToken
-    setupVault(royaltyRecv1, 1)
+    setupVault(royaltyRecv1, 1) // 1 for ExampleToken
     // 1.b Use FungibleTokenSwitchboard to receive funds
     executeSetupSwitchboardToReceiveRoyaltyTx(royaltyRecv1, /storage/exampleTokenVault, /public/exampleTokenReceiver)
 
     // 2. royaltyRecv2 would use FungibleTokenSwitchboard and incorrect token vault to receive funds
     // 2.a Setup vault for TestToken
-    setupVault(royaltyRecv2, 2)
+    setupVault(royaltyRecv2, 2) // 2 for TestToken
     // 2.b Use FungibleTokenSwitchboard to receive funds
     executeSetupSwitchboardToReceiveRoyaltyTx(royaltyRecv2, /storage/testTokenVault, /public/testTokenReceiver)
 
@@ -564,10 +565,7 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
         nil
     )
 
-    //panic(getCollectionIdsLength(acceptor.address, /public/exampleNFTCollection).toString())
-    // panic(getCollectionIdsAtIndex(acceptor.address, /public/exampleNFTCollection, 0).toString())
-
-    //assert(!isNFTCompatibleWithOffer(offerId, offeror.address, 2, acceptor.address), message: "NFT should not compabtible with offer filters")
+    assert(isNFTCompatibleWithOffer(offerId, offeror.address, 2, acceptor.address), message: "NFT should not compabtible with offer filters")
 
     // Execute accept transaction
     executeOfferAcceptTx(
@@ -580,37 +578,34 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
         nil
     )
 
-    // assert(
-    //     getBalance(royaltyRecv1.address) == 14.5,
-    //     message: "Incorrect balance send to royalty receiver 1 \n Expected 12.5 but got - ".concat((getBalance(royaltyRecv1.address)).toString())
-    // )
-    // assert(
-    //     getBalance(royaltyRecv2.address) == 0.0,
-    //     message: "Incorrect balance send to royalty receiver 2 \n Expected 25.0 but got - ".concat((getBalance(royaltyRecv2.address)).toString())
-    // )
+    assert(checkReceiverCapabilityConformPaymentHandler(royaltyRecv1.address, /public/GenericFTReceiver, accounts["Offers"]!.address), message: "Should be true")
+
     assert(
-        getBalance(acceptor.address) == 76.5 + 29.0,
-        message: "Incorrect balance send to acceptor \n Expected 87.5 but got - ".concat((getBalance(acceptor.address)).toString())
+        getBalance(royaltyRecv1.address) == 14.5,
+        message: "Incorrect balance send to royalty receiver 1 \n Expected 14.5 but got - ".concat((getBalance(royaltyRecv1.address)).toString())
     )
-    // assert(
-    //     getBalance(cutReceiver1.address) == 12.0,
-    //     message: "Incorrect balance send to cut receiver 1 \n Expected 12.0 but got - ".concat((getBalance(cutReceiver1.address)).toString())
-    // )
-    // assert(
-    //     getBalance(cutReceiver2.address) == 13.0,
-    //     message: "Incorrect balance send to cut receiver 1 \n Expected 13.0 but got - ".concat((getBalance(cutReceiver2.address)).toString())
-    // )
-    // assert(
-    //     getBalance(commissionReceiver1.address) == 5.0,
-    //     message: "Incorrect balance send to commission receiver 1 \n Expected 5.0 but got - ".concat((getBalance(commissionReceiver1.address)).toString())
-    // )
-    // assert(
-    //     getLatestCollectionId(offeror.address, /public/exampleNFTCollection) == 0,
-    //     message: "Incorrect NFT get transferred"
-    // )
+    // royaltyRecv2 wouldn't get any funds and funds allocated to it transferred to acceptor i.e. 29.0
+    assert(
+        getBalance(acceptor.address) == 76.5 + 29.0 + 76.5,  // 76.5 would be its existing balance
+        message: "Incorrect balance send to acceptor \n Expected 182.0 but got - ".concat((getBalance(acceptor.address)).toString())
+    )
+    assert(
+        getBalance(cutReceiver1.address) == 12.0 + 12.0, // 12.0 would be its existing balance
+        message: "Incorrect balance send to cut receiver 1 \n Expected 24.0 but got - ".concat((getBalance(cutReceiver1.address)).toString())
+    )
+    assert(
+        getBalance(cutReceiver2.address) == 13.0 + 13.0, // 13.0 would be its existing balance
+        message: "Incorrect balance send to cut receiver 1 \n Expected 26.0 but got - ".concat((getBalance(cutReceiver2.address)).toString())
+    )
+    assert(
+        getBalance(commissionReceiver1.address) == 5.0 + 5.0, // 10.0 would be its existing balance
+        message: "Incorrect balance send to commission receiver 1 \n Expected 10.0 but got - ".concat((getBalance(commissionReceiver1.address)).toString())
+    )
+    assert(
+        getLatestCollectionId(offeror.address, /public/exampleNFTCollection) == 0,
+        message: "Incorrect NFT get transferred"
+    )
 }
-
-
 
 
 ///////////////////
@@ -854,6 +849,15 @@ pub fun scriptExecutor(_ path: String, _ arguments: [AnyStruct]): AnyStruct? {
     return scriptResult.returnValue
 }
 
+pub fun checkReceiverCapabilityConformPaymentHandler(
+    _ receiver: Address,
+    _ receiverPath: PublicPath,
+    _ defaultPaymentHandlerOwner: Address
+): Bool {
+    let scriptResult = scriptExecutor("../../../scripts/check_receiver_capability_conforms_payment_handler.cdc", [receiver, receiverPath, defaultPaymentHandlerOwner])
+    return scriptResult! as! Bool
+}
+
 pub fun checkAccountHasOpenOffersPublicCapability(_ target: Address): Bool {
     let scriptResult = scriptExecutor("../../../scripts/check_open_offers_public_capability_exists.cdc", [target])
     return scriptResult! as! Bool
@@ -903,6 +907,7 @@ pub fun getOfferDetails(_ target: Address, _ offerId: UInt64): UFix64 {
 pub fun getLatestCollectionId(_ address: Address, _ collectionPublicPath: PublicPath): UInt64 {
     var scriptResult = scriptExecutor("./mocks/scripts/get_collection_ids_length.cdc", [address, collectionPublicPath])
     let lengthOfCollectionId = scriptResult! as! Int64
+    assert(lengthOfCollectionId > 0, message: "There is no NFT present in the collection")
     scriptResult = scriptExecutor("./mocks/scripts/get_collection_ids.cdc", [address, collectionPublicPath, lengthOfCollectionId - 1])
     return scriptResult! as! UInt64
 }
