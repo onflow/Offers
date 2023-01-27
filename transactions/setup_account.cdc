@@ -1,4 +1,4 @@
-import Offers from "../contracts/Offers.cdc"
+import Offers from "OffersAccount"
 
 /// This transaction installs the OpenOffers ressource in an account.
 

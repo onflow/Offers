@@ -1,5 +1,5 @@
-import Resolver from "../contracts/Resolver.cdc"
-import ExampleOfferResolver from "../contracts/ExampleOfferResolver.cdc"
+import Resolver from "ResolverAccount"
+import ExampleOfferResolver from "ExampleOfferResolverAccount"
 
 /// This transaction installs the OfferResolver ressource in an account.
 transaction {

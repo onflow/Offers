@@ -1,7 +1,7 @@
 import Test
 
 pub var blockchain = Test.newEmulatorBlockchain()
-pub var accounts: {String: Test.Account} = {}
+
 pub enum ErrorType: UInt8 {
     pub case TX_PANIC
     pub case TX_ASSERT
@@ -9,99 +9,48 @@ pub enum ErrorType: UInt8 {
     pub case CONTRACT_WITHDRAWBALANCE
 }
 
+// Setup accounts for the smart contracts.
+pub let coreContractsAccount = blockchain.createAccount()
+
+pub let offers = blockchain.createAccount()
+pub let resolver = blockchain.createAccount()
+pub let offeror = blockchain.createAccount()
+pub let cutReceiver1 = blockchain.createAccount()
+pub let cutReceiver2 = blockchain.createAccount()
+pub let offerAcceptor = blockchain.createAccount()
+pub let royaltyReceiver1 = blockchain.createAccount()
+pub let royaltyReceiver2 = blockchain.createAccount()
+pub let commissionReceiver = blockchain.createAccount()
+pub let paymentHandler = blockchain.createAccount()
+pub let defaultPaymentHandler = blockchain.createAccount()
+pub let testToken = blockchain.createAccount()
+
 pub fun setup() {
 
-    // Setup accounts for the smart contract.
-    let offers = blockchain.createAccount()
-    let resolver = blockchain.createAccount()
-    let exampleOfferResolver = resolver
-    let nft = blockchain.createAccount()
-    let metadataViews = blockchain.createAccount()
-    let fungibleToken = blockchain.createAccount()
-    let nonFungibleToken = blockchain.createAccount()
-    let offeror = blockchain.createAccount()
-    let token = blockchain.createAccount()
-    let cutReceiver1 = blockchain.createAccount()
-    let cutReceiver2 = blockchain.createAccount()
-    let offerAcceptor = blockchain.createAccount()
-    let royaltyReceiver1 = blockchain.createAccount()
-    let royaltyReceiver2 = blockchain.createAccount()
-    let commissionReceiver1 = blockchain.createAccount()
-    let commissionReceiver2 = blockchain.createAccount()
-    let paymentHandler = blockchain.createAccount()
-    let fungibleTokenSwitchboard = blockchain.createAccount()
-    let defaultPaymentHandler = blockchain.createAccount()
-    let testToken = blockchain.createAccount()
-
-
-    accounts = {
-        "FungibleToken": fungibleToken,
-        "NonFungibleToken": nonFungibleToken,
-        "MetadataViews": metadataViews,
-        "ExampleToken": token,
-        "TestToken": testToken,
-        "ExampleNFT": nft,
-        "PaymentHandler": paymentHandler,
-        "FungibleTokenSwitchboard": fungibleTokenSwitchboard,
-        "DefaultPaymentHandler": defaultPaymentHandler,
-        "Resolver": resolver,
-        "ExampleOfferResolver": resolver,
-        "Offers": offers,
-        "offeror": offeror,
-        "offerAcceptor": offerAcceptor,
-        "royaltyReceiver1": royaltyReceiver1,
-        "royaltyReceiver2": royaltyReceiver2,
-        "cutReceiver1": cutReceiver1,
-        "cutReceiver2": cutReceiver2,
-        "CommissionReceiver1": commissionReceiver1,
-        "CommissionReceiver2": commissionReceiver2
-    }
-    
-    // Let the CLI know how the above addresses are mapped to the contracts.
-    blockchain.useConfiguration(Test.Configuration({
-        "./FungibleToken.cdc":accounts["FungibleToken"]!.address,
-        "./NonFungibleToken.cdc":accounts["NonFungibleToken"]!.address,
-        "./MetadataViews.cdc":accounts["MetadataViews"]!.address,
-        "./PaymentHandler.cdc":accounts["PaymentHandler"]!.address,
-        "./DefaultPaymentHandler.cdc":accounts["DefaultPaymentHandler"]!.address,
-        "./core/FungibleToken.cdc":accounts["FungibleToken"]!.address,
-        "./core/NonFungibleToken.cdc":accounts["NonFungibleToken"]!.address,
-        "./core/MetadataViews.cdc":accounts["MetadataViews"]!.address,
-        "./core/FungibleTokenSwitchboard.cdc":accounts["FungibleTokenSwitchboard"]!.address,
-        "./Resolver.cdc":accounts["Resolver"]!.address,
-        "../contracts/PaymentHandler.cdc":accounts["PaymentHandler"]!.address,
-        "../contracts/TestToken.cdc":accounts["TestToken"]!.address,
-        "../contracts/Offers.cdc": accounts["Offers"]!.address,
-        "../contracts/Resolver.cdc": accounts["Resolver"]!.address,
-        "../contracts/ExampleOfferResolver.cdc": accounts["ExampleOfferResolver"]!.address,
-        "../contracts/core/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../contracts/core/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../contracts/core/ExampleToken.cdc": accounts["ExampleToken"]!.address,
-        "../contracts/core/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
-        "../contracts/core/MetadataViews.cdc": accounts["MetadataViews"]!.address,
-        "../../../../../contracts/core/FungibleToken.cdc": accounts["FungibleToken"]!.address,
-        "../../../../../contracts/core/ExampleToken.cdc": accounts["ExampleToken"]!.address,
-        "../../../../../contracts/core/MetadataViews.cdc": accounts["MetadataViews"]!.address,
-        "../../../../../contracts/core/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../../../../../contracts/core/ExampleNFT.cdc": accounts["ExampleNFT"]!.address,
-        "../../../../../contracts/core/FungibleTokenSwitchboard.cdc":accounts["FungibleTokenSwitchboard"]!.address,
-        "../../../../../contracts/Offers.cdc": accounts["Offers"]!.address,
-        "../../contracts/core/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
-        "../../contracts/core/ExampleNFT.cdc": accounts["ExampleNFT"]!.address
+    // Let the CLI know how the above accounts are mapped to the contracts.
+    blockchain.useConfiguration(Test.Configuration(addresses: {
+        "CoreContractsAccount":coreContractsAccount.address,
+        "PaymentHandlerAccount":paymentHandler.address,
+        "DefaultPaymentHandlerAccount":defaultPaymentHandler.address,
+        "ResolverAccount":resolver.address,
+        "ExampleOfferResolverAccount": resolver.address,
+        "PaymentHandlerAccount":paymentHandler.address,
+        "TestTokenAccount":testToken.address,
+        "OffersAccount": offers.address
     }))
 
-    deploySmartContract("FungibleToken", accounts["FungibleToken"]!, "../../../contracts/core/FungibleToken.cdc")
-    deploySmartContract("NonFungibleToken", accounts["NonFungibleToken"]!, "../../../contracts/core/NonFungibleToken.cdc")
-    deploySmartContract("MetadataViews", accounts["MetadataViews"]!, "../../../contracts/core/MetadataViews.cdc")
-    deploySmartContract("ExampleToken", accounts["ExampleToken"]!, "../../../contracts/core/ExampleToken.cdc")
-    deploySmartContract("TestToken", accounts["TestToken"]!, "./mocks/contracts/TestToken.cdc")
-    deploySmartContract("ExampleNFT", accounts["ExampleNFT"]!, "../../../contracts/core/ExampleNFT.cdc")
-    deploySmartContract("FungibleTokenSwitchboard", accounts["FungibleTokenSwitchboard"]!, "../../../contracts/core/FungibleTokenSwitchboard.cdc")
-    deploySmartContract("PaymentHandler", accounts["PaymentHandler"]!, "../../../contracts/PaymentHandler.cdc")
-    deploySmartContract("DefaultPaymentHandler", accounts["DefaultPaymentHandler"]!, "../../../contracts/DefaultPaymentHandler.cdc")
-    deploySmartContract("Resolver", accounts["Resolver"]!, "../../../contracts/Resolver.cdc")
-    deploySmartContract("ExampleOfferResolver", accounts["ExampleOfferResolver"]!, "../../../contracts/ExampleOfferResolver.cdc")
-    deploySmartContract("Offers", accounts["Offers"]!, "../../../contracts/Offers.cdc")
+    deploySmartContract("FungibleToken", coreContractsAccount, "../../../contracts/core/FungibleToken.cdc")
+    deploySmartContract("NonFungibleToken", coreContractsAccount, "../../../contracts/core/NonFungibleToken.cdc")
+    deploySmartContract("MetadataViews", coreContractsAccount, "../../../contracts/core/MetadataViews.cdc")
+    deploySmartContract("ExampleToken", coreContractsAccount, "../../../contracts/core/ExampleToken.cdc")
+    deploySmartContract("FungibleTokenSwitchboard", coreContractsAccount, "../../../contracts/core/FungibleTokenSwitchboard.cdc")
+    deploySmartContract("ExampleNFT", coreContractsAccount, "../../../contracts/core/ExampleNFT.cdc")
+    deploySmartContract("TestToken", testToken, "./mocks/contracts/TestToken.cdc")
+    deploySmartContract("PaymentHandler", paymentHandler, "../../../contracts/PaymentHandler.cdc")
+    deploySmartContract("DefaultPaymentHandler", defaultPaymentHandler, "../../../contracts/DefaultPaymentHandler.cdc")
+    deploySmartContract("Resolver", resolver, "../../../contracts/Resolver.cdc")
+    deploySmartContract("ExampleOfferResolver", resolver, "../../../contracts/ExampleOfferResolver.cdc")
+    deploySmartContract("Offers", offers, "../../../contracts/Offers.cdc")
 }
 
 //////////////
@@ -111,10 +60,10 @@ pub fun setup() {
 
 pub fun testCreateOpenOffers() {
     // Execute transaction
-    executeSetupAccountTx(accounts["offeror"]!)
+    executeSetupAccountTx(offeror)
     // Verify the transaction effects by calling script
     assert(
-        checkAccountHasOpenOffersPublicCapability(accounts["offeror"]!.address),
+        checkAccountHasOpenOffersPublicCapability(offeror.address),
         message: "Given account doesn't hold the OpenOffers resoource"
     )
 }
@@ -137,7 +86,6 @@ pub fun testFailToCreateOfferBecauseAccountDoesNotHaveOpenOffersResource() {
 }
 
 pub fun testFailToCreateOfferBecauseAccountDoesNotHaveNFTReceiverCapability() {
-    let offeror = accounts["offeror"]!
     // Setup Token vault and top up with some tokens
     executeSetupVaultAndMintTokensTx(offeror, 1000.0)
     // Execute createOffer transaction
@@ -158,7 +106,6 @@ pub fun testFailToCreateOfferBecauseAccountDoesNotHaveNFTReceiverCapability() {
 
 
 pub fun testFailToCreateOfferBecauseAccountDoesNotHaveResolverCapability() {
-    let offeror = accounts["offeror"]!
     // Setup NFTReceiver Capability.
     executeSetupExampleNFTAccount(offeror)
     // Execute createOffer transaction
@@ -179,16 +126,15 @@ pub fun testFailToCreateOfferBecauseAccountDoesNotHaveResolverCapability() {
 
 pub fun testSetupResolver() {
     // Execute transaction
-    executeSetupResolverTx(accounts["offeror"]!)
+    executeSetupResolverTx(offeror)
     // Verify the transaction effects by calling script
     assert(
-        checkAccountHasOfferResolverPublicCapability(accounts["offeror"]!.address),
+        checkAccountHasOfferResolverPublicCapability(offeror.address),
         message: "Given account doesn't hold the OpenOffers resoource"
     )
 }
 
 pub fun testFailToCreateOfferBecauseInsufficientOfferAmount() {
-    let offeror = accounts["offeror"]!
     // Execute createOffer transaction
     executeCreateOfferTx(
         offeror,
@@ -206,7 +152,6 @@ pub fun testFailToCreateOfferBecauseInsufficientOfferAmount() {
 }
 
 pub fun testFailToCreateOfferBecauseCommissionReceiverDoesNotHaveCapability() {
-    let offeror = accounts["offeror"]!
     // Execute createOffer transaction
     executeCreateOfferTx(
         offeror,
@@ -217,14 +162,13 @@ pub fun testFailToCreateOfferBecauseCommissionReceiverDoesNotHaveCapability() {
         {"_type": "NFT", "typeId": "Type<@ExampleNFT.NFT>()"},
         offeror.address,
         5.0,
-        [accounts["CommissionReceiver1"]!.address],
+        [commissionReceiver.address],
         "Invalid capability of the commission receiver",
         ErrorType.TX_ASSERT
     )
 }
 
 pub fun testFailToCreateOfferBecauseInsufficientBalance() {
-    let offeror = accounts["offeror"]!
     // Execute createOffer transaction
     executeCreateOfferTx(
         offeror,
@@ -242,16 +186,12 @@ pub fun testFailToCreateOfferBecauseInsufficientBalance() {
 }
 
 pub fun testCreateOffer() {
-    let offeror = accounts["offeror"]!
-    let cutReceiver1 = accounts["cutReceiver1"]!
-    let cutReceiver2 = accounts["cutReceiver2"]!
-    let commissionReceiver1 = accounts["CommissionReceiver1"]!
-    let commissionReceiver2 = accounts["CommissionReceiver2"]!
+    let commissionReceiver2 = blockchain.createAccount()
 
     // Setup the receiver of fungible token
     executeSetupVaultAndMintTokensTx(cutReceiver1, 0.0)
     executeSetupVaultAndMintTokensTx(cutReceiver2, 0.0)
-    executeSetupVaultAndMintTokensTx(commissionReceiver1, 0.0)
+    executeSetupVaultAndMintTokensTx(commissionReceiver, 0.0)
     executeSetupVaultAndMintTokensTx(commissionReceiver2, 0.0)
     // Execute createOffer transaction
     executeCreateOfferTx(
@@ -263,7 +203,7 @@ pub fun testCreateOffer() {
         {"resolver": UInt8(0), "nftId": UInt64(0)},
         offeror.address,
         5.0,
-        [commissionReceiver1.address, commissionReceiver2.address],
+        [commissionReceiver.address, commissionReceiver2.address],
         nil,
         nil
     )
@@ -276,7 +216,6 @@ pub fun testCreateOffer() {
 }
 
 pub fun testGetValidOfferFilterTypes() {
-    let offeror = accounts["offeror"]!
     let offerId = getOfferId(offeror.address, 0)
     let validOfferFilterTypes = getValidOfferFilterTypes(offeror.address, offerId)
     assert(validOfferFilterTypes.length == 3, message: "Incorrect length")
@@ -287,19 +226,13 @@ pub fun testGetValidOfferFilterTypes() {
 }
 
 pub fun testAcceptTheOffer() {
-    let acceptor = accounts["offerAcceptor"]!
-    let offeror = accounts["offeror"]!
-    let royaltyReceiver1 = accounts["royaltyReceiver1"]!
-    let royaltyReceiver2 = accounts["royaltyReceiver2"]!
-    let cutReceiver1 = accounts["cutReceiver1"]!
-    let cutReceiver2 = accounts["cutReceiver2"]!
-    let minter = accounts["ExampleNFT"]!
+    let minter = coreContractsAccount
     let offerId = getOfferId(offeror.address, 0)
 
     // Step 1: Setup the receiver of fungible token
-    executeSetupVaultAndMintTokensTx(acceptor, 0.0)
+    executeSetupVaultAndMintTokensTx(offerAcceptor, 0.0)
     // Step 2: Setup the NFT collection for offer acceptor
-    executeSetupExampleNFTAccount(acceptor)
+    executeSetupExampleNFTAccount(offerAcceptor)
     // Step 3: Mint the NFT and assign the royalties.
     // Step 3a: Setup royalties account
     executeSetupVaultAndSetupRoyaltyReceiver(royaltyReceiver1, /storage/exampleTokenVault)
@@ -307,7 +240,7 @@ pub fun testAcceptTheOffer() {
     // Step 3b: Mint NFT
     executeMintNFTTx(
         minter,
-        acceptor.address,
+        offerAcceptor.address,
         "BasketBall_1",
         "This is first basketball",
         "BASKETBALL",
@@ -318,25 +251,21 @@ pub fun testAcceptTheOffer() {
         nil
     )
 
-    assert(isNFTCompatibleWithOffer(offerId, offeror.address, 0, acceptor.address), message: "NFT is not compabtible with offer filters")
+    assert(isNFTCompatibleWithOffer(offerId, offeror.address, 0, offerAcceptor.address), message: "NFT is not compabtible with offer filters")
 
-    let expectedPaymentToOffree = getExpectedPaymentToOfferee(offerId, offeror.address, acceptor.address, 0, /public/exampleNFTCollection)
+    let expectedPaymentToOffree = getExpectedPaymentToOfferee(offerId, offeror.address, offerAcceptor.address, 0, /public/exampleNFTCollection)
 
     assert(expectedPaymentToOffree == 76.5, message: "Incorrect balance send to acceptor \n Expected 76.5 but got - ".concat(expectedPaymentToOffree.toString()))
 }
 
 pub fun testProvidedNFTShouldNotBeCompatibleWithOffer() {
-    let acceptor = accounts["offerAcceptor"]!
-    let offeror = accounts["offeror"]!
-    let minter = accounts["ExampleNFT"]!
-    let royaltyReceiver1 = accounts["royaltyReceiver1"]!
-    let royaltyReceiver2 = accounts["royaltyReceiver2"]!
+    let minter = coreContractsAccount
     let offerId = getOfferId(offeror.address, 0)
     
     // Step 3b: Mint NFT
     executeMintNFTTx(
         minter,
-        acceptor.address,
+        offerAcceptor.address,
         "BasketBall_1",
         "This is first basketball",
         "BASKETBALL",
@@ -347,19 +276,16 @@ pub fun testProvidedNFTShouldNotBeCompatibleWithOffer() {
         nil
     )
 
-    assert(!isNFTCompatibleWithOffer(offerId, offeror.address, 1, acceptor.address), message: "NFT should not compabtible with offer filters")
+    assert(!isNFTCompatibleWithOffer(offerId, offeror.address, 1, offerAcceptor.address), message: "NFT should not compabtible with offer filters")
 }
 
 pub fun testFailToAcceptOfferBecauseOpenOffersResourceDoesNotExists() {
-    let acceptor = accounts["offerAcceptor"]!
-    let offeror = accounts["offeror"]!
-    let commissionReceiver = accounts["CommissionReceiver1"]!
     let offerId = getOfferId(offeror.address, 0)
     let fakeAccount = blockchain.createAccount()
     
     // It should fail because of OpenOffer doesn't exists
     executeOfferAcceptTx(
-        acceptor,
+        offerAcceptor,
         0,
         offerId,
         fakeAccount.address,
@@ -370,8 +296,6 @@ pub fun testFailToAcceptOfferBecauseOpenOffersResourceDoesNotExists() {
 }
 
 pub fun testFailToAcceptOfferBecauseReceiverCapabilityIsInvalid() {
-    let offeror = accounts["offeror"]!
-    let commissionReceiver = accounts["CommissionReceiver1"]!
     let offerId = getOfferId(offeror.address, 0)
     let fakeReceiver = blockchain.createAccount()
     
@@ -388,15 +312,12 @@ pub fun testFailToAcceptOfferBecauseReceiverCapabilityIsInvalid() {
 }
 
 pub fun testFailToAcceptOfferBecauseCommissionReceiverCapabilityIsInvalid() {
-    let acceptor = accounts["offerAcceptor"]!
-    let offeror = accounts["offeror"]!
-    let commissionReceiver = accounts["CommissionReceiver1"]!
     let offerId = getOfferId(offeror.address, 0)
     let fakeCommissionReceiver = blockchain.createAccount()
     
     // It should fail because of OpenOffer doesn't exists
     executeOfferAcceptTx(
-        acceptor,
+        offerAcceptor,
         0,
         offerId,
         offeror.address,
@@ -407,23 +328,16 @@ pub fun testFailToAcceptOfferBecauseCommissionReceiverCapabilityIsInvalid() {
 }
 
 pub fun testAcceptOfferAndCleanup() {
-    let acceptor = accounts["offerAcceptor"]!
-    let offeror = accounts["offeror"]!
-    let royaltyReceiver1 = accounts["royaltyReceiver1"]!
-    let royaltyReceiver2 = accounts["royaltyReceiver2"]!
-    let cutReceiver1 = accounts["cutReceiver1"]!
-    let cutReceiver2 = accounts["cutReceiver2"]!
-    let minter = accounts["ExampleNFT"]!
-    let commissionReceiver1 = accounts["CommissionReceiver1"]!
+    let minter = coreContractsAccount
     let offerId = getOfferId(offeror.address, 0)
 
     // Execute accept transaction
     executeOfferAcceptTx(
-        acceptor,
+        offerAcceptor,
         0,
         offerId,
         offeror.address,
-        commissionReceiver1.address,
+        commissionReceiver.address,
         nil,
         nil
     )
@@ -437,8 +351,8 @@ pub fun testAcceptOfferAndCleanup() {
         message: "Incorrect balance send to royalty receiver 2 \n Expected 25.0 but got - ".concat((getBalance(royaltyReceiver2.address)).toString())
     )
     assert(
-        getBalance(acceptor.address) == 76.5,
-        message: "Incorrect balance send to acceptor \n Expected 87.5 but got - ".concat((getBalance(acceptor.address)).toString())
+        getBalance(offerAcceptor.address) == 76.5,
+        message: "Incorrect balance send to acceptor \n Expected 87.5 but got - ".concat((getBalance(offerAcceptor.address)).toString())
     )
     assert(
         getBalance(cutReceiver1.address) == 12.0,
@@ -449,8 +363,8 @@ pub fun testAcceptOfferAndCleanup() {
         message: "Incorrect balance send to cut receiver 1 \n Expected 13.0 but got - ".concat((getBalance(cutReceiver2.address)).toString())
     )
     assert(
-        getBalance(commissionReceiver1.address) == 5.0,
-        message: "Incorrect balance send to commission receiver 1 \n Expected 5.0 but got - ".concat((getBalance(commissionReceiver1.address)).toString())
+        getBalance(commissionReceiver.address) == 5.0,
+        message: "Incorrect balance send to commission receiver 1 \n Expected 5.0 but got - ".concat((getBalance(commissionReceiver.address)).toString())
     )
     assert(
         getLatestCollectionId(offeror.address, /public/exampleNFTCollection) == 0,
@@ -459,14 +373,7 @@ pub fun testAcceptOfferAndCleanup() {
 }
 
 pub fun testGhostListingScenario() {
-    let acceptor = accounts["offerAcceptor"]!
-    let offeror = accounts["offeror"]!
-    let royaltyReceiver1 = accounts["royaltyReceiver1"]!
-    let royaltyReceiver2 = accounts["royaltyReceiver2"]!
-    let cutReceiver1 = accounts["cutReceiver1"]!
-    let cutReceiver2 = accounts["cutReceiver2"]!
-    let minter = accounts["ExampleNFT"]!
-    let commissionReceiver1 = accounts["CommissionReceiver1"]!
+    let minter = coreContractsAccount
     let unknownReceiver = blockchain.createAccount()
 
     // Execute createOffer transaction
@@ -479,7 +386,7 @@ pub fun testGhostListingScenario() {
         {"resolver": UInt8(0), "nftId": UInt64(2)},
         offeror.address,
         5.0,
-        [commissionReceiver1.address],
+        [commissionReceiver.address],
         nil,
         nil
     )
@@ -505,14 +412,9 @@ pub fun testGhostListingScenario() {
 }
 
 pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyone() {
-    let acceptor = accounts["offerAcceptor"]!
-    let offeror = accounts["offeror"]!
     let royaltyRecv1 = blockchain.createAccount()
     let royaltyRecv2 = blockchain.createAccount()
-    let cutReceiver1 = accounts["cutReceiver1"]!
-    let cutReceiver2 = accounts["cutReceiver2"]!
-    let minter = accounts["ExampleNFT"]!
-    let commissionReceiver1 = accounts["CommissionReceiver1"]!
+    let minter = coreContractsAccount
     let unknownReceiver = blockchain.createAccount()
 
     // Execute createOffer transaction
@@ -554,7 +456,7 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
     // Step 3.a: Mint NFT
     executeMintNFTTx(
         minter,
-        acceptor.address,
+        offerAcceptor.address,
         "BasketBall_4",
         "This is first basketball",
         "BASKETBALL",
@@ -565,20 +467,20 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
         nil
     )
 
-    assert(isNFTCompatibleWithOffer(offerId, offeror.address, 2, acceptor.address), message: "NFT should not compabtible with offer filters")
+    assert(isNFTCompatibleWithOffer(offerId, offeror.address, 2, offerAcceptor.address), message: "NFT should not compabtible with offer filters")
 
     // Execute accept transaction
     executeOfferAcceptTx(
-        acceptor,
+        offerAcceptor,
         2,
         offerId,
         offeror.address,
-        commissionReceiver1.address,
+        commissionReceiver.address,
         nil,
         nil
     )
 
-    assert(checkReceiverCapabilityConformPaymentHandler(royaltyRecv1.address, /public/GenericFTReceiver, accounts["Offers"]!.address), message: "Should be true")
+    assert(checkReceiverCapabilityConformPaymentHandler(royaltyRecv1.address, /public/GenericFTReceiver, offers.address), message: "Should be true")
 
     assert(
         getBalance(royaltyRecv1.address) == 14.5,
@@ -586,8 +488,8 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
     )
     // royaltyRecv2 wouldn't get any funds and funds allocated to it transferred to acceptor i.e. 29.0
     assert(
-        getBalance(acceptor.address) == 76.5 + 29.0 + 76.5,  // 76.5 would be its existing balance
-        message: "Incorrect balance send to acceptor \n Expected 182.0 but got - ".concat((getBalance(acceptor.address)).toString())
+        getBalance(offerAcceptor.address) == 76.5 + 29.0 + 76.5,  // 76.5 would be its existing balance
+        message: "Incorrect balance send to acceptor \n Expected 182.0 but got - ".concat((getBalance(offerAcceptor.address)).toString())
     )
     assert(
         getBalance(cutReceiver1.address) == 12.0 + 12.0, // 12.0 would be its existing balance
@@ -598,8 +500,8 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
         message: "Incorrect balance send to cut receiver 1 \n Expected 26.0 but got - ".concat((getBalance(cutReceiver2.address)).toString())
     )
     assert(
-        getBalance(commissionReceiver1.address) == 5.0 + 5.0, // 10.0 would be its existing balance
-        message: "Incorrect balance send to commission receiver 1 \n Expected 10.0 but got - ".concat((getBalance(commissionReceiver1.address)).toString())
+        getBalance(commissionReceiver.address) == 5.0 + 5.0, // 10.0 would be its existing balance
+        message: "Incorrect balance send to commission receiver 1 \n Expected 10.0 but got - ".concat((getBalance(commissionReceiver.address)).toString())
     )
     assert(
         getLatestCollectionId(offeror.address, /public/exampleNFTCollection) == 0,
@@ -758,7 +660,7 @@ pub fun executeSetupVaultForTestTokenAndSetupRoyaltyReceiver(_ whom: Test.Accoun
 pub fun mintTokens(_ recipient: Address, _ amount: UFix64) {
     let txCode = Test.readFile("./mocks/transactions/mint_tokens.cdc")
     assert(
-        txExecutor(txCode, [accounts["ExampleToken"]!], [recipient, amount], nil, nil),
+        txExecutor(txCode, [coreContractsAccount], [recipient, amount], nil, nil),
         message: "Failed to mint tokens to given recipient"
     )
 }

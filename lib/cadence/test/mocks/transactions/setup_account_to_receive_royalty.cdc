@@ -9,8 +9,8 @@
 /// The path used for the public link is a new path that in the future, is expected to receive
 /// and generic token, which could be forwarded to the appropriate vault
 
-import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
-import MetadataViews from "../../../../../contracts/core/MetadataViews.cdc"
+import FungibleToken from "CoreContractsAccount"
+import MetadataViews from "CoreContractsAccount"
 
 transaction(vaultPath: StoragePath) {
 

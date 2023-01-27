@@ -3,9 +3,9 @@
 /// to create a new link in their account to be used for receiving royalties
 /// This transaction can be used for any fungible token, which is specified by the `vaultPath` argument
 /// 
-import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
-import MetadataViews from "../../../../../contracts/core/MetadataViews.cdc"
-import FungibleTokenSwitchboard from "../../../../../contracts/core/FungibleTokenSwitchboard.cdc"
+import FungibleToken from "CoreContractsAccount"
+import MetadataViews from "CoreContractsAccount"
+import FungibleTokenSwitchboard from "CoreContractsAccount"
 
 transaction(vaultPath: StoragePath, receiverPath: PublicPath) {
 

@@ -1,6 +1,6 @@
-import NonFungibleToken from "../../../../../contracts/core/NonFungibleToken.cdc"
-import ExampleNFT from "../../../../../contracts/core/ExampleNFT.cdc"
-import MetadataViews from "../../../../../contracts/core/MetadataViews.cdc"
+import NonFungibleToken from "CoreContractsAccount"
+import ExampleNFT from "CoreContractsAccount"
+import MetadataViews from "CoreContractsAccount"
 
 /// This transaction is what an account would run
 /// to set itself up to receive NFTs

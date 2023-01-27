@@ -1,5 +1,5 @@
-import NonFungibleToken from "./core/NonFungibleToken.cdc"
-import MetadataViews from "./core/MetadataViews.cdc"
+import NonFungibleToken from "CoreContractsAccount"
+import MetadataViews from "CoreContractsAccount"
 
 pub contract Resolver {
     

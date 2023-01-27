@@ -1,8 +1,8 @@
-import Offers from "../contracts/Offers.cdc"
-import FungibleToken from "../contracts/core/FungibleToken.cdc"
-import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
-import ExampleToken from "../contracts/core/ExampleToken.cdc"
-import ExampleNFT from "../contracts/core/ExampleNFT.cdc"
+import Offers from "OffersAccount"
+import FungibleToken from "CoreContractsAccount"
+import NonFungibleToken from "CoreContractsAccount"
+import ExampleToken from "CoreContractsAccount"
+import ExampleNFT from "CoreContractsAccount"
 
 transaction(nftId: UInt64, offerId: UInt64, openOffersHolder: Address, commissionReceiver: Address) {
 

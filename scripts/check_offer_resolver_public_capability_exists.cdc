@@ -1,5 +1,5 @@
-import Resolver from "../contracts/Resolver.cdc"
-import ExampleOfferResolver from "../contracts/ExampleOfferResolver.cdc"
+import Resolver from "ResolverAccount"
+import ExampleOfferResolver from "ExampleOfferResolverAccount"
 
 pub fun main(target: Address): Bool {
     let capRef = getAccount(target).getCapability<&ExampleOfferResolver.OfferResolver{Resolver.ResolverPublic}>(

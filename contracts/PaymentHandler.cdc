@@ -1,4 +1,4 @@
-import FungibleToken from "./core/FungibleToken.cdc"
+import FungibleToken from "CoreContractsAccount"
 
 /// PaymentHandler contract
 /// It is generic payment handler, Provides a public interface ,i.e. `PaymentHandlerPublic`

@@ -1,4 +1,4 @@
-import Offers from "../contracts/Offers.cdc"
+import Offers from "OffersAccount"
 
 transaction(offerId: UInt64, openOfferOwner: Address) {
 
