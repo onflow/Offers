@@ -1,4 +1,4 @@
-import FungibleToken from "./FungibleToken.cdc"
+import FungibleToken from "CoreContractsAccount"
 
 /// The contract that allows an account to receive payments in multiple fungible
 /// tokens using a single `{FungibleToken.Receiver}` capability.

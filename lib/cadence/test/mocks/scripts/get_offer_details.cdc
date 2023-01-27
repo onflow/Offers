@@ -1,4 +1,4 @@
-import Offers from "../../../../../contracts/Offers.cdc"
+import Offers from "OffersAccount"
 
 // This script returns the details for a Offer within a OpenOffer
 

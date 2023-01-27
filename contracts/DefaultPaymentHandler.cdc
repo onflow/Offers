@@ -1,6 +1,6 @@
-import PaymentHandler from "./PaymentHandler.cdc"
-import FungibleToken from "./core/FungibleToken.cdc"
-import FungibleTokenSwitchboard from "./core/FungibleTokenSwitchboard.cdc"
+import PaymentHandler from "PaymentHandlerAccount"
+import FungibleToken from "CoreContractsAccount"
+import FungibleTokenSwitchboard from "CoreContractsAccount"
 
 pub contract DefaultPaymentHandler {
 

@@ -1,6 +1,6 @@
-import Resolver from "./Resolver.cdc"
-import NonFungibleToken from "./core/NonFungibleToken.cdc"
-import MetadataViews from "./core/MetadataViews.cdc"
+import Resolver from "ResolverAccount"
+import NonFungibleToken from "CoreContractsAccount"
+import MetadataViews from "CoreContractsAccount"
 
 pub contract ExampleOfferResolver {
 

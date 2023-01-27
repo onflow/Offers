@@ -1,5 +1,5 @@
-import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
-import ExampleToken from "../../../../../contracts/core/ExampleToken.cdc"
+import FungibleToken from "CoreContractsAccount"
+import ExampleToken from "CoreContractsAccount"
 
 /// This transaction is what the minter Account uses to mint new tokens
 /// They provide the recipient address and amount to mint, and the tokens

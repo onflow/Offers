@@ -1,6 +1,6 @@
-import PaymentHandler from "../contracts/PaymentHandler.cdc"
-import FungibleToken from "../contracts/core/FungibleToken.cdc"
-import ExampleToken from "../contracts/core/ExampleToken.cdc"
+import PaymentHandler from "PaymentHandlerAccount"
+import FungibleToken from "CoreContractsAccount"
+import ExampleToken from "CoreContractsAccount"
 
 pub fun main(receiver: Address, receiverPath: PublicPath, defaultPaymentHandlerOwner: Address): Bool {
     let paymentHandlerRef = getAccount(defaultPaymentHandlerOwner)

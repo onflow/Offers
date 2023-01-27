@@ -1,9 +1,9 @@
-import Offers from "../contracts/Offers.cdc"
-import Resolver from "../contracts/Resolver.cdc"
-import FungibleToken from "../contracts/core/FungibleToken.cdc"
-import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
-import ExampleToken from "../contracts/core/ExampleToken.cdc"
-import ExampleNFT from "../contracts/core/ExampleNFT.cdc"
+import Offers from "OffersAccount"
+import Resolver from "ResolverAccount"
+import FungibleToken from "CoreContractsAccount"
+import NonFungibleToken from "CoreContractsAccount"
+import ExampleToken from "CoreContractsAccount"
+import ExampleNFT from "CoreContractsAccount"
 
 /// This version of transaction is implemented because cadence test framework doesn't support importing of contract.
 transaction(

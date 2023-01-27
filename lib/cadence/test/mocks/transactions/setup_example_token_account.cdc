@@ -2,9 +2,9 @@
 // anyone to add a Vault resource to their account so that 
 // they can use the exampleToken
 
-import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
-import ExampleToken from "../../../../../contracts/core/ExampleToken.cdc"
-import TestToken from "../contracts/TestToken.cdc"
+import FungibleToken from "CoreContractsAccount"
+import ExampleToken from "CoreContractsAccount"
+import TestToken from "TestTokenAccount"
 
 transaction(tokenType: UInt8) {
 

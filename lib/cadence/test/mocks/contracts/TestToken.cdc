@@ -1,4 +1,4 @@
-import FungibleToken from "../../../../../contracts/core/FungibleToken.cdc"
+import FungibleToken from "CoreContractsAccount"
 
 pub contract TestToken: FungibleToken {
 

@@ -1,4 +1,4 @@
-import Offers from "../contracts/Offers.cdc"
+import Offers from "OffersAccount"
 
 /// This script returns an array of all the offers created under given account owned OpenOffers resource
 pub fun main(account: Address, offerId: UInt64): {String: String} {

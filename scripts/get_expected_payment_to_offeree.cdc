@@ -1,6 +1,6 @@
-import Offers from "../contracts/Offers.cdc"
-import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
-import MetadataViews from "../contracts/core/MetadataViews.cdc"
+import Offers from "OffersAccount"
+import NonFungibleToken from "CoreContractsAccount"
+import MetadataViews from "CoreContractsAccount"
 
 /// It allows to tell how much amount that offeree receives if it accepts offer of offeror
 pub fun main(offerId: UInt64, offerCreator: Address, offereeAddress: Address, nftId: UInt64, collectionPublicPath: PublicPath): UFix64 {

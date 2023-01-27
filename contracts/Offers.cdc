@@ -1,9 +1,9 @@
-import FungibleToken from "./core/FungibleToken.cdc"
-import NonFungibleToken from "./core/NonFungibleToken.cdc"
-import MetadataViews from "./core/MetadataViews.cdc"
-import PaymentHandler from "./PaymentHandler.cdc"
-import DefaultPaymentHandler from "./DefaultPaymentHandler.cdc"
-import Resolver from "./Resolver.cdc"
+import FungibleToken from "CoreContractsAccount"
+import NonFungibleToken from "CoreContractsAccount"
+import MetadataViews from "CoreContractsAccount"
+import PaymentHandler from "PaymentHandlerAccount"
+import DefaultPaymentHandler from "DefaultPaymentHandlerAccount"
+import Resolver from "ResolverAccount"
 
 /// Offers
 ///
