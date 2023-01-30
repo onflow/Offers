@@ -1,7 +1,7 @@
 import Offers from "../../../../../contracts/Offers.cdc"
 
 // This script returns an array of all the offers created under given account owned OpenOffers resource
-// TEST-FRAMEWORK: Because of the cadence test incompetency.
+// This is a workaround to a feature that should perhaps belong in the testing framework 
 
 pub fun main(account: Address, index: Int64): UInt64 {
     let openOfferRef = getAccount(account)

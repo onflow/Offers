@@ -33,7 +33,7 @@ transaction(nftId: UInt64, offerId: UInt64, openOffersHolder: Address, commissio
         self.offer = self.openOfferPublic.borrowOffer(offerId: offerId)
             ?? panic("Unable to borrow the offer")
 
-        // Get the NFT ressource and withdraw the NFT from the signers account
+        // Get the NFT resource and withdraw the NFT from the signers account
         self.nftCollection = signer.borrow<&NonFungibleToken.Collection>(from: ExampleNFT.CollectionStoragePath)
             ?? panic("Cannot borrow NFT collection receiver from account")
     }

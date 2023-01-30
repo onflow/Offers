@@ -29,19 +29,6 @@ pub contract ExampleOfferResolver {
                     let nftId = offerFilters["nftId"]! as? UInt64 ?? panic("nftId value is missing or non UInt64 nftId")
                     return item.id == nftId
 
-                case ResolverType.MetadataViews.rawValue:
-                    let views = item.resolveView(Type<MetadataViews.Editions>()) 
-                        ?? panic("NFT does not use MetadataViews.Editions")
-                    let editions = views as! [MetadataViews.Edition]
-                    var hasCorrectMetadataView = false
-                    for edition in editions {
-                        if edition.name == offerFilters["editionName"]! as! String {
-                            hasCorrectMetadataView = true
-                            break
-                        }
-                    }
-                    return hasCorrectMetadataView == true
-
                 default:
                     panic("Invalid Resolver on given offer, Resolver received value is".concat(resolver.toString()))
             }
@@ -52,8 +39,7 @@ pub contract ExampleOfferResolver {
         pub fun getValidOfferFilterTypes(): {String: String} {
             return {
                 "resolver": "UInt8",
-                "nftId": "UInt64",
-                "editionName": "String"
+                "nftId": "UInt64"
             }
         }
     }

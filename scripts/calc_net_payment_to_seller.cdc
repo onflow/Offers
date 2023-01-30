@@ -19,5 +19,5 @@ pub fun main(offerId: UInt64, offerCreator: Address, offereeAddress: Address, nf
         .borrow<&{NonFungibleToken.CollectionPublic,  MetadataViews.ResolverCollection}>()
         ?? panic("Could not borrow capability from public collection at specified path")
     let item = collectionRef.borrowViewResolver(id: nftId)
-    return offer.getExpectedPaymentToOfferee(item: item)
+    return offer.calcNetPaymentToSeller(item: item)
 }   

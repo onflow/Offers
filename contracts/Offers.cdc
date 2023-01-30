@@ -10,12 +10,12 @@ import Resolver from "./Resolver.cdc"
 /// Contract holds the Offer resource and a public method to create them.
 ///
 /// Anyone interested in purchasing an asset such as NFT can create an offer resource and express
-/// their willingness to purchase the asset at the proposed price. Using the 'Resolver', the offeror
+/// their willingness to purchase the asset at the proposed price. Using the 'Resolver', the prospective buyer
 /// can also propose offers with different filters on asset metadata. The Resolver contract provides
 /// a generic resource to resolve the applied filter on the proposed offer.
 ///
 /// If the asset supports 'MetadataViews.Royalty' the offer resource will also honour the royalties.
-/// The offeror can set a different `OfferCut` to pay the platform fee or any other type of commission.
+/// The prospective buyer can set a different `OfferCut` to pay the platform fee or any other type of commission.
 ///
 /// NFT owners can keep an eye out for 'OfferAvailable' events for NFTs they own and check the Offer amount
 /// to determine whether or not to accept the offer.
@@ -31,7 +31,7 @@ pub contract Offers {
     pub event OpenOffersInitialized(OpenOffersResourceId: UInt64)
 
     /// OfferAvailable
-    /// Emitted when the offer gets created by the offeror
+    /// Emitted when the offer gets created by the prospective buyer
     pub event OfferAvailable(
         openOffersAddress: Address,
         offerId: UInt64,
@@ -114,7 +114,7 @@ pub contract Offers {
 
     /// FundProvider
     /// Datatype to wrap the Provider capability for the offer
-    /// Offeror can set the `allowedWithdrawableBalance` value so that only limited funds can be withdrawn
+    /// prospective buyer can set the `allowedWithdrawableBalance` value so that only limited funds can be withdrawn
     pub struct FundProvider {
         /// Holds the provider capability, It get consume when funds are withdrawn to pay for the NFT purchase.
         access(self) let providerCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
@@ -164,11 +164,11 @@ pub contract Offers {
         /// Note that we do not store an address to find the Vault that this represents,
         /// as the link or resource that we fetch in this way may be manipulated,
         /// so to find the address that a cut goes to you must get this struct and then
-        /// call receiver.borrow()!.owner.address on it.
-        /// This can be done efficiently in a script.
+        /// call receiver.borrow()!.owner!.address on it.
+        /// This can be done efficiently in a script. e.g. - `get_offer_cut_receiver_addresses.cdc`
         pub let receiver: Capability<&{FungibleToken.Receiver}>
 
-        /// The amount of the payment FungibleToken that will be paid to the receiver.
+        /// The amount of FungibleTokens that will be paid to the Sellers receiver when they accept the Offer. 
         pub let amount: UFix64
 
         /// initializer
@@ -181,14 +181,14 @@ pub contract Offers {
         /// Allow to converts the `OfferCut` into `FundsReceiverInfo`.
         pub fun into(): FundsReceiverInfo {
             return FundsReceiverInfo(
-                receiver: self.receiver.address,
+                receiver: self.receiver.borrow()!.owner!.address,
                 amount: self.amount
             )
         }
     }
 
     /// OfferDetails
-    /// A struct containing Offers' data.
+    /// A struct to contain Offers metadata which define the criteria to match
     ///
     pub struct OfferDetails {
         /// The ID of the offer
@@ -251,11 +251,11 @@ pub contract Offers {
     }
 
     /// OfferPublic
-    /// An interface providing a useful public interface to an Offer resource.
+    /// The public interface to an Offer resource.
     ///
     pub resource interface OfferPublic {
         /// accept
-        /// This will accept the offer if provided with the NFT id that matches the Offer
+        /// Below function would be used by the seller of the NFT to accept the offer.
         ///
         pub fun accept(
             item: @{NonFungibleToken.INFT, MetadataViews.Resolver},
@@ -267,10 +267,10 @@ pub contract Offers {
         ///
         pub fun getDetails(): OfferDetails
 
-        /// getExpectedPaymentToOfferee
+        /// calcNetPaymentToSeller
         /// Return the amount of fungible tokens will be received by the offeree
         ///
-        pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64
+        pub fun calcNetPaymentToSeller(item: &{MetadataViews.Resolver}): UFix64
 
         /// getValidOfferFilterTypes
         /// Return the supported filter types
@@ -284,7 +284,9 @@ pub contract Offers {
 
         /// getAllowedCommissionReceivers
         /// Fetches the allowed marketplaces capabilities or commission receivers.
-        /// If it returns `nil` then commission is up to grab by anyone.
+        /// If this returns a `nil` value it means the Offer specifies no commission receivers.
+        /// In this case the signer may use their own address to collect available commissions 
+        /// since no constraint was declared.
         ///
         pub fun getAllowedCommissionReceivers(): [Capability<&{FungibleToken.Receiver}>]?
 
@@ -328,8 +330,6 @@ pub contract Offers {
             commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?
         ) {
             pre {
-                // TDOD: Need to test this
-                // nftReceiverCapability.borrow()!.getType() == nftType: "Invalid NFT receiver type"
                 nftReceiverCapability.check(): "Can not borrow nftReceiverCapability"
                 resolverCapability.check(): "Can not borrow resolverCapability"
                 maximumOfferAmount == fundProvider.allowedWithdrawableBalance: "Mismatch in maximum offer amount and allowed withdrawable balance"
@@ -389,7 +389,7 @@ pub contract Offers {
 
             assert(hasMeetingResolverCriteria, message: "Resolver failed, invalid NFT please check Offer criteria")
 
-            // Withdraw maximum offered amount by the offeror.
+            // Withdraw maximum offered amount by the prospective buyer.
             let toBePaidVault <- self.fundProvider.withdraw()
 
             if self.details.commissionAmount > 0.0 {
@@ -469,7 +469,7 @@ pub contract Offers {
             receiverCapability.borrow()!.deposit(from: <- toBePaidVault)
             // Update the storage and mark the offer accepted.
             self.details.setToAccepted()
-            // Desposit the asset to the offeror.
+            // Desposit the asset to the prospective buyer.
             nftReceiverCap.deposit(token: <- (item as! @NonFungibleToken.NFT))
 
             emit OfferCompleted(
@@ -504,10 +504,10 @@ pub contract Offers {
             return self.resolverCapability.borrow()!.getValidOfferFilterTypes()
         }
 
-        /// getExpectedPaymentToOfferee
+        /// calcNetPaymentToSeller
         /// Return the amount of fungible tokens will be received by the offeree
         ///
-        pub fun getExpectedPaymentToOfferee(item: &{MetadataViews.Resolver}): UFix64 {
+        pub fun calcNetPaymentToSeller(item: &{MetadataViews.Resolver}): UFix64 {
             var totalCutPayment: UFix64 = 0.0
             var totalRoyaltyPayment: UFix64 = 0.0
             let effectiveAmountAfterCommission = self.details.maximumOfferAmount - self.details.commissionAmount
@@ -583,7 +583,7 @@ pub contract Offers {
     /// To create offers to buy NFTs, One should own
     /// `OfferManager` resource to create and manage the
     /// different offers created by themselves.
-    /// Example - If Alice intends to become and offeror then
+    /// Example - If Alice intends to become and prospective buyer then
     /// Alice should hold the OfferManager resource in her account
     /// and using the offerManager resource Alice can create different
     /// offers and manage them like remove an offer.
@@ -617,7 +617,7 @@ pub contract Offers {
     pub resource interface OpenOffersPublic {
 
         /// getOfferIds
-        /// Get a list of Offer ids created by the offeror and hold by the OfferManager resource.
+        /// Get a list of Offer ids created by the prospective buyer and hold by the OfferManager resource.
         ///
         pub fun getOfferIds(): [UInt64]
 
@@ -643,9 +643,9 @@ pub contract Offers {
         pub fun getAllOffersDetails(): {UInt64: Offers.OfferDetails}
     }
 
-    /// Definition of the APIs offered by the OfferManager resource and OpenOffersPublic.
+    /// The concrete OpenOffers Resource implementing OfferManager and OpenOffersPublic resource interfaces.
     pub resource OpenOffers: OfferManager, OpenOffersPublic {
-        /// The dictionary of Offers uuids to Offer resources.
+        /// Dictionary of Offers uuids to Offer resources.
         access(contract) var offers: @{UInt64: Offer}
 
         /// createOffer
@@ -747,7 +747,6 @@ pub contract Offers {
         /// cleanup
         /// Remove an Offer *if* it has been accepted.
         /// Anyone can call, but at present it only benefits the account owner to do so.
-        /// Kind purchasers can however call it if they like.
         ///
         pub fun cleanup(offerId: UInt64) {
             pre {
@@ -759,8 +758,8 @@ pub contract Offers {
         }
 
         /// cleanupGhostOffer
-        /// Remove an Offer if it is not accepted yet and its provider balance
-        /// got below the `allowedWithdrawableBalance`.
+        /// Removes an Offer if it is not already accepted and its provider
+        /// balance is less then `allowedWithdrawableBalance`
         pub fun cleanupGhostOffer(offerId: UInt64) {
             pre {
                 self.offers[offerId] != nil: "Offer with given id does not exists"
@@ -776,7 +775,7 @@ pub contract Offers {
         destroy () {
             destroy self.offers
 
-            // Let event consumers know that this openOffers will no longer exist
+            // Emit event notifying that this OpenOffers Resource has been destroyed
             emit OpenOffersDestroyed(openOffersResourceID: self.uuid)
         }
 
@@ -815,8 +814,8 @@ pub contract Offers {
             target: DefaultPaymentHandler.DefaultPaymentHandlerStoragePath
         )
         self.DefaultPaymentHandlerCap = self.account.getCapability<&{PaymentHandler.PaymentHandlerPublic}>(PaymentHandler.getPaymentHandlerPublicPath())
-        self.OpenOffersStoragePath = /storage/OpenOffers
-        self.OpenOffersPublicPath = /public/OpenOffers
+        self.OpenOffersStoragePath = /storage/OpenMarketplaceOffers
+        self.OpenOffersPublicPath = /public/OpenMarketplaceOffers
         self.FungibleTokenProviderVaultPath = /private/OffersFungibleTokenProviderVault
     }
 }

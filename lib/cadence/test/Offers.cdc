@@ -279,11 +279,7 @@ pub fun testGetValidOfferFilterTypes() {
     let offeror = accounts["offeror"]!
     let offerId = getOfferId(offeror.address, 0)
     let validOfferFilterTypes = getValidOfferFilterTypes(offeror.address, offerId)
-    assert(validOfferFilterTypes.length == 3, message: "Incorrect length")
-    // let filterKeys = validOfferFilterTypes.keys
-    // assert(validOfferFilterTypes[filterKeys[0]]! == "UInt8", message: "Incorrect type provided")
-    // assert(validOfferFilterTypes[filterKeys[1]]! == "UInt64", message: "Incorrect type provided")
-    // assert(validOfferFilterTypes[filterKeys[2]]! == "String", message: "Incorrect type provided")
+    assert(validOfferFilterTypes.length == 2, message: "Incorrect length")
 }
 
 pub fun testAcceptTheOffer() {
@@ -320,7 +316,7 @@ pub fun testAcceptTheOffer() {
 
     assert(isNFTCompatibleWithOffer(offerId, offeror.address, 0, acceptor.address), message: "NFT is not compabtible with offer filters")
 
-    let expectedPaymentToOffree = getExpectedPaymentToOfferee(offerId, offeror.address, acceptor.address, 0, /public/exampleNFTCollection)
+    let expectedPaymentToOffree = calcNetPaymentToSeller(offerId, offeror.address, acceptor.address, 0, /public/exampleNFTCollection)
 
     assert(expectedPaymentToOffree == 76.5, message: "Incorrect balance send to acceptor \n Expected 76.5 but got - ".concat(expectedPaymentToOffree.toString()))
 }
@@ -647,11 +643,6 @@ pub fun txExecutor(_ txCode: String, _ signers: [Test.Account], _ arguments: [An
     let txResult = blockchain.executeTransaction(tx)
     if let err = txResult.error {
         if let expectedErrorMessage = expectedError {
-            // if expectedErrorType == ErrorType.TX_PANIC {
-            //     let ptr = getErrorMessagePointer(errorType: expectedErrorType!)
-            //     let errMessage = err.message.slice(from: ptr, upTo: ptr + expectedErrorMessage.length)
-            //     panic(errMessage)
-            // }
             let ptr = getErrorMessagePointer(errorType: expectedErrorType!)
             let errMessage = err.message.slice(from: ptr, upTo: ptr + expectedErrorMessage.length)
             let hasEmittedCorrectMessage = errMessage == expectedErrorMessage ? true : false
@@ -918,14 +909,14 @@ pub fun isCollectionEmpty(_ address: Address, _ collectionPublicPath: PublicPath
     return lengthOfCollectionId == 0
 }
 
-pub fun getExpectedPaymentToOfferee(
+pub fun calcNetPaymentToSeller(
     _ offerId: UInt64,
     _ offerCreator: Address,
     _ offereeAddress: Address,
     _ nftId: UInt64,
     _ collectionPublicPath: PublicPath
 ): UFix64 {
-    let scriptResult = scriptExecutor("../../../scripts/get_expected_payment_to_offeree.cdc", [offerId, offerCreator, offereeAddress, nftId, collectionPublicPath])
+    let scriptResult = scriptExecutor("../../../scripts/calc_net_payment_to_seller.cdc", [offerId, offerCreator, offereeAddress, nftId, collectionPublicPath])
     return scriptResult! as! UFix64
 }
 

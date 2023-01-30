@@ -8,7 +8,7 @@ pub contract DefaultPaymentHandler {
 
     pub resource DefaultHandler: PaymentHandler.PaymentHandlerPublic {
         
-        /// An Offeror can provide different implementation according to which payment get settled during the acceptance of the offer.
+        /// The Prospective Buyer can provide different implementation according to which payment get settled during the acceptance of the offer.
         ///
         /// @param receiverCap Capability which would receive funds.
         /// @param allowedVaultType Allowed vault type for the payment settlement
