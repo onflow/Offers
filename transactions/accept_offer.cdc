@@ -4,6 +4,13 @@ import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
 import ExampleToken from "../contracts/core/ExampleToken.cdc"
 import ExampleNFT from "../contracts/core/ExampleNFT.cdc"
 
+/// Transaction used to accept the offer by the seller.
+///
+/// # Params
+/// @param ndtId ID of the NFT that would be sell when consuming offer
+/// @param offerId ID of the offer resource that get accepted using this transaction
+/// @param openOffersHolder Address of the account which holds offer resource
+/// @param commissionReceiver Address that receives the commission after fulfilment or accpetance of the offer
 transaction(nftId: UInt64, offerId: UInt64, openOffersHolder: Address, commissionReceiver: Address) {
 
     let openOfferPublic: &Offers.OpenOffers{Offers.OpenOffersPublic}

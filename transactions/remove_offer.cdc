@@ -1,5 +1,10 @@
 import Offers from "../contracts/Offers.cdc"
 
+
+/// Transaction used to remove the offer resource from the offer account holder
+///
+/// # Params
+/// @param offerId ID of the offer that get removed from the account
 transaction(offerId: UInt64) {
     let offerManager: &Offers.OpenOffers{Offers.OfferManager}
 

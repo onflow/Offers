@@ -1,25 +1,37 @@
 import Offers from "../contracts/Offers.cdc"
-import Resolver from "../contracts/Resolver.cdc"
+import OfferMatcher from "../contracts/OfferMatcher.cdc"
 import FungibleToken from "../contracts/core/FungibleToken.cdc"
 import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
 import ExampleToken from "../contracts/core/ExampleToken.cdc"
 import ExampleNFT from "../contracts/core/ExampleNFT.cdc"
 
-/// This version of transaction is implemented because cadence test framework doesn't support importing of contract.
+/// Transaction used to propose the offer or in other words, Prospective buyer would use below transaction to create offer
+/// for the NFT it likes to buy
+///
+/// # Params
+/// @param nftReceiver Address of the account which is going to receive the NFT once the offer get accepted
+/// @param maximumOfferAmount Maximum amount of fungible tokens prospective buyer is willing to pay for acceptance of its offer
+/// @param cutReceivers List of addresses who receives cut from the sale of offer
+/// @param cuts List of amount sent to the `cutReceivers`.
+/// @param offerFilters Filter applied by the offer on the receiving NFT
+/// @param matcherRefProvider Address of the contract that provides the matcher for the offer
+/// @param commissionAmount Commission amount provided to the facilitator of the purchase of offer
+/// @param commissionReceivers List of addresses which are allowed to receive `commissionAmount`. Generally those are marketplaces
+/// If its provided value is `nil` then it means anyone in the ecosystem can grab the commission to facilitate the purchase of the offer
 transaction(
     nftReceiver: Address,
     maximumOfferAmount: UFix64,
     cutReceivers: [Address],
     cuts:[UFix64],
     offerFilters: {String: AnyStruct},
-    resolverRefProvider: Address,
+    matcherRefProvider: Address,
     commissionAmount: UFix64,
     commissionReceivers: [Address]?
 ) {
     let offerManager: &Offers.OpenOffers{Offers.OfferManager}
     let providerVaultCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
     let nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
-    let resolverCap: Capability<&{Resolver.ResolverPublic}>
+    let matcherCap: Capability<&{OfferMatcher.OfferMatcherPublic}>
     var offerCuts: [Offers.OfferCut]
     var commissionRecevs: [Capability<&{FungibleToken.Receiver}>]
 
@@ -42,8 +54,8 @@ transaction(
         self.nftReceiverCap = getAccount(nftReceiver).getCapability<&{NonFungibleToken.Receiver}>(ExampleNFT.CollectionPublicPath)
         assert(self.nftReceiverCap.check(), message: "NFT receiver capability does not exists")
 
-        self.resolverCap = getAccount(resolverRefProvider).getCapability<&{Resolver.ResolverPublic}>(Resolver.getResolverPublicPath())
-        assert(self.resolverCap.check(), message: "Resolver capability does not exists")
+        self.matcherCap = getAccount(matcherRefProvider).getCapability<&{OfferMatcher.OfferMatcherPublic}>(OfferMatcher.getOfferMatcherPublicPath())
+        assert(self.matcherCap.check(), message: "OfferMatcher capability does not exists")
 
         var amountToBePaid: UFix64 = 0.0
 
@@ -75,17 +87,17 @@ transaction(
     }
 
     execute {
-        let fundProvider = Offers.FundProvider(cap: self.providerVaultCap, withdrawableBalance: maximumOfferAmount)
+        let paymentProviderGuard = Offers.PaymentProviderGuard(cap: self.providerVaultCap, withdrawableBalance: maximumOfferAmount)
 
         self.offerManager.createOffer(
-            fundProvider: fundProvider,
+            paymentProviderGuard: paymentProviderGuard,
             nftReceiverCapability: self.nftReceiverCap,
             nftType: Type<@ExampleNFT.NFT>(),
             maximumOfferAmount: maximumOfferAmount,
             commissionAmount: commissionAmount,
             offerCuts: self.offerCuts,
             offerFilters: offerFilters,
-            resolverCapability: self.resolverCap,
+            matcherCapability: self.matcherCap,
             paymentHandlerCapability: nil,
             commissionReceivers: self.commissionRecevs.length == 0 ? nil : self.commissionRecevs
         )

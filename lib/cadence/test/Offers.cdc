@@ -13,8 +13,8 @@ pub fun setup() {
 
     // Setup accounts for the smart contract.
     let offers = blockchain.createAccount()
-    let resolver = blockchain.createAccount()
-    let exampleOfferResolver = resolver
+    let offerMatcher = blockchain.createAccount()
+    let exampleOfferMatcher = offerMatcher
     let nft = blockchain.createAccount()
     let metadataViews = blockchain.createAccount()
     let fungibleToken = blockchain.createAccount()
@@ -44,8 +44,8 @@ pub fun setup() {
         "PaymentHandler": paymentHandler,
         "FungibleTokenSwitchboard": fungibleTokenSwitchboard,
         "DefaultPaymentHandler": defaultPaymentHandler,
-        "Resolver": resolver,
-        "ExampleOfferResolver": resolver,
+        "OfferMatcher": offerMatcher,
+        "ExampleOfferMatcher": offerMatcher,
         "Offers": offers,
         "offeror": offeror,
         "offerAcceptor": offerAcceptor,
@@ -68,12 +68,12 @@ pub fun setup() {
         "./core/NonFungibleToken.cdc":accounts["NonFungibleToken"]!.address,
         "./core/MetadataViews.cdc":accounts["MetadataViews"]!.address,
         "./core/FungibleTokenSwitchboard.cdc":accounts["FungibleTokenSwitchboard"]!.address,
-        "./Resolver.cdc":accounts["Resolver"]!.address,
+        "./OfferMatcher.cdc":accounts["OfferMatcher"]!.address,
         "../contracts/PaymentHandler.cdc":accounts["PaymentHandler"]!.address,
         "../contracts/TestToken.cdc":accounts["TestToken"]!.address,
         "../contracts/Offers.cdc": accounts["Offers"]!.address,
-        "../contracts/Resolver.cdc": accounts["Resolver"]!.address,
-        "../contracts/ExampleOfferResolver.cdc": accounts["ExampleOfferResolver"]!.address,
+        "../contracts/OfferMatcher.cdc": accounts["OfferMatcher"]!.address,
+        "../contracts/ExampleOfferMatcher.cdc": accounts["ExampleOfferMatcher"]!.address,
         "../contracts/core/FungibleToken.cdc": accounts["FungibleToken"]!.address,
         "../contracts/core/NonFungibleToken.cdc": accounts["NonFungibleToken"]!.address,
         "../contracts/core/ExampleToken.cdc": accounts["ExampleToken"]!.address,
@@ -99,8 +99,8 @@ pub fun setup() {
     deploySmartContract("FungibleTokenSwitchboard", accounts["FungibleTokenSwitchboard"]!, "../../../contracts/core/FungibleTokenSwitchboard.cdc")
     deploySmartContract("PaymentHandler", accounts["PaymentHandler"]!, "../../../contracts/PaymentHandler.cdc")
     deploySmartContract("DefaultPaymentHandler", accounts["DefaultPaymentHandler"]!, "../../../contracts/DefaultPaymentHandler.cdc")
-    deploySmartContract("Resolver", accounts["Resolver"]!, "../../../contracts/Resolver.cdc")
-    deploySmartContract("ExampleOfferResolver", accounts["ExampleOfferResolver"]!, "../../../contracts/ExampleOfferResolver.cdc")
+    deploySmartContract("OfferMatcher", accounts["OfferMatcher"]!, "../../../contracts/OfferMatcher.cdc")
+    deploySmartContract("ExampleOfferMatcher", accounts["ExampleOfferMatcher"]!, "../../../contracts/ExampleOfferMatcher.cdc")
     deploySmartContract("Offers", accounts["Offers"]!, "../../../contracts/Offers.cdc")
 }
 
@@ -157,7 +157,7 @@ pub fun testFailToCreateOfferBecauseAccountDoesNotHaveNFTReceiverCapability() {
 }
 
 
-pub fun testFailToCreateOfferBecauseAccountDoesNotHaveResolverCapability() {
+pub fun testFailToCreateOfferBecauseAccountDoesNotHaveOfferMatcherCapability() {
     let offeror = accounts["offeror"]!
     // Setup NFTReceiver Capability.
     executeSetupExampleNFTAccount(offeror)
@@ -172,17 +172,17 @@ pub fun testFailToCreateOfferBecauseAccountDoesNotHaveResolverCapability() {
         offeror.address,
         2.0,
         nil,
-        "Resolver capability does not exists",
+        "OfferMatcher capability does not exists",
         ErrorType.TX_ASSERT
     )
 }
 
-pub fun testSetupResolver() {
+pub fun testSetupOfferMatcher() {
     // Execute transaction
-    executeSetupResolverTx(accounts["offeror"]!)
+    executeSetupOfferMatcherTx(accounts["offeror"]!)
     // Verify the transaction effects by calling script
     assert(
-        checkAccountHasOfferResolverPublicCapability(accounts["offeror"]!.address),
+        checkAccountHasOfferOfferMatcherPublicCapability(accounts["offeror"]!.address),
         message: "Given account doesn't hold the OpenOffers resoource"
     )
 }
@@ -260,7 +260,7 @@ pub fun testCreateOffer() {
         150.0,
         [cutReceiver1.address, cutReceiver2.address],
         [12.0, 13.0],
-        {"resolver": UInt8(0), "nftId": UInt64(0)},
+        {"matcher": UInt8(0), "nftId": UInt64(0)},
         offeror.address,
         5.0,
         [commissionReceiver1.address, commissionReceiver2.address],
@@ -472,7 +472,7 @@ pub fun testGhostListingScenario() {
         150.0,
         [cutReceiver1.address, cutReceiver2.address],
         [12.0, 13.0],
-        {"resolver": UInt8(0), "nftId": UInt64(2)},
+        {"matcher": UInt8(0), "nftId": UInt64(2)},
         offeror.address,
         5.0,
         [commissionReceiver1.address],
@@ -518,7 +518,7 @@ pub fun testPaymentAccurementWhenCapabilityTypeDiffersAndCommissionIsGrabForAnyo
         150.0,
         [cutReceiver1.address, cutReceiver2.address],
         [12.0, 13.0],
-        {"resolver": UInt8(0), "nftId": UInt64(2)},
+        {"matcher": UInt8(0), "nftId": UInt64(2)},
         offeror.address,
         5.0,
         [],
@@ -627,7 +627,7 @@ pub fun getErrorMessagePointer(errorType: ErrorType) : Int {
         case ErrorType.TX_PANIC: return 159
         case ErrorType.TX_ASSERT: return 170
         case ErrorType.TX_PRE: return 174
-        case ErrorType.CONTRACT_WITHDRAWBALANCE: return 647
+        case ErrorType.CONTRACT_WITHDRAWBALANCE: return 679
         default: panic("Invalid error type")
     }
     return 0
@@ -676,11 +676,11 @@ pub fun executeSetupAccountTx(_ signer: Test.Account) {
     )
 }
 
-pub fun executeSetupResolverTx(_ signer: Test.Account) {
-    let txCode = Test.readFile("../../../transactions/setup_resolver.cdc")
+pub fun executeSetupOfferMatcherTx(_ signer: Test.Account) {
+    let txCode = Test.readFile("../../../transactions/setup_offer_matcher.cdc")
     assert(
         txExecutor(txCode, [signer], [], nil, nil),
-        message: "Failed to install OfferResolver resource in given offeror account"
+        message: "Failed to install OfferMatcher resource in given offeror account"
     )
 }
 
@@ -691,7 +691,7 @@ pub fun executeCreateOfferTx(
     _ cutReceivers: [Address],
     _ cuts: [UFix64],
     _ offerFilters: {String: AnyStruct},
-    _ resolverRefProvider: Address,
+    _ matcherRefProvider: Address,
     _ commissionAmount: UFix64,
     _ commissionReceivers: [Address]?,
     _ expectedError: String?,
@@ -699,7 +699,7 @@ pub fun executeCreateOfferTx(
 ) {
     let txCode = Test.readFile("../../../transactions/propose_offer.cdc")
     assert(
-        txExecutor(txCode, [signer], [nftReceiver, maximumOfferAmount, cutReceivers, cuts, offerFilters, resolverRefProvider, commissionAmount, commissionReceivers], expectedError, expectedErrorType),
+        txExecutor(txCode, [signer], [nftReceiver, maximumOfferAmount, cutReceivers, cuts, offerFilters, matcherRefProvider, commissionAmount, commissionReceivers], expectedError, expectedErrorType),
         message: "Failed to propose offer"
     )
 }
@@ -855,8 +855,8 @@ pub fun checkAccountHasOpenOffersPublicCapability(_ target: Address): Bool {
 }
 
 
-pub fun checkAccountHasOfferResolverPublicCapability(_ target: Address): Bool {
-    let scriptResult = scriptExecutor("../../../scripts/check_offer_resolver_public_capability_exists.cdc", [target])
+pub fun checkAccountHasOfferOfferMatcherPublicCapability(_ target: Address): Bool {
+    let scriptResult = scriptExecutor("../../../scripts/check_offer_matcher_public_capability_exists.cdc", [target])
     return scriptResult! as! Bool
 }
 

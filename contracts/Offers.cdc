@@ -3,7 +3,7 @@ import NonFungibleToken from "./core/NonFungibleToken.cdc"
 import MetadataViews from "./core/MetadataViews.cdc"
 import PaymentHandler from "./PaymentHandler.cdc"
 import DefaultPaymentHandler from "./DefaultPaymentHandler.cdc"
-import Resolver from "./Resolver.cdc"
+import OfferMatcher from "./OfferMatcher.cdc"
 
 /// Offers
 ///
@@ -15,7 +15,7 @@ import Resolver from "./Resolver.cdc"
 /// whereas the term "seller" refers to the buyer who accepts the `Offer` or sells its NFT to the prospective buyer.
 ///
 /// Prospective buyers can specify the kind of NFT they want by using different NFT traits or NFT Ids as filters,
-/// which are provided as `offerFilters` during the offer creation process.  The `Resolver` contract,
+/// which are provided as `offerFilters` during the offer creation process.  The `OfferMatcher` contract,
 /// on the other hand, would be used to resolve those filters during the purchase or acceptance of the offer.
 ///
 /// When a new offer is created, the contract fires the `OfferAvailable` event. Interested marketplaces or dApps
@@ -117,10 +117,9 @@ pub contract Offers {
         }
     }
 
-    /// FundProvider
-    /// Datatype to wrap the Provider capability for the offer
-    /// prospective buyer can set the `allowedWithdrawableBalance` value so that only limited funds can be withdrawn
-    pub struct FundProvider {
+    /// PaymentProviderGuard
+    /// Provides basic spend control guard around the enclosed payment provider capability, set using `allowedWithdrawableBalance`
+    pub struct PaymentProviderGuard {
         /// Holds the provider capability, It get consume when funds are withdrawn to pay for the NFT purchase.
         access(self) let providerCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
         /// Maximum funds can be withdrawn from the provided capability.
@@ -161,8 +160,8 @@ pub contract Offers {
     }
 
     /// OfferCut
-    /// A struct representing a recipient that must be sent a certain amount
-    /// of the payment when offeree accepts the offer.
+    /// Convenience type holding the FungibleToken.Receiver and amount. This metadata is
+    /// accessed at time of sale, making it possible for the seller to transact directly with the offering account
     ///
     pub struct OfferCut {
         /// The receiver for the payment.
@@ -295,10 +294,10 @@ pub contract Offers {
         ///
         pub fun getAllowedCommissionReceivers(): [Capability<&{FungibleToken.Receiver}>]?
 
-        /// getOfferResolverCapability
-        /// Return the resolver capability
+        /// getOfferMatcherCapability
+        /// Return the offer matcher capability
         ///
-        pub fun getOfferResolverCapability(): Capability<&{Resolver.ResolverPublic}>
+        pub fun getOfferMatcherCapability(): Capability<&{OfferMatcher.OfferMatcherPublic}>
 
         /// getPaymentHandlerCapability
         /// Return the payment handler capability
@@ -311,33 +310,33 @@ pub contract Offers {
         /// The OfferDetails struct of the Offer
         access(self) let details: OfferDetails
         /// The vault which will handle the payment if the Offer is accepted.
-        access(contract) let fundProvider: FundProvider
+        access(contract) let paymentProviderGuard: PaymentProviderGuard
         /// Receiver address for the NFT when/if the Offer is accepted.
         access(contract) let nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>
         /// An optional list of capabilities that are approved 
         /// to receive the commission.
         access(contract) let commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?
-        /// Resolver capability for the offer type
-        access(contract) let resolverCapability: Capability<&{Resolver.ResolverPublic}>
+        /// OfferMatcher capability for the offer type
+        access(contract) let matcherCapability: Capability<&{OfferMatcher.OfferMatcherPublic}>
         /// Payment Handler capability, It got use when offer get accepted
         access(contract) let paymentHandlerCapability: Capability<&{PaymentHandler.PaymentHandlerPublic}>
 
         init(
-            fundProvider: FundProvider,
+            paymentProviderGuard: PaymentProviderGuard,
             nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             commissionAmount: UFix64,
             offerCuts: [Offers.OfferCut],
             offerFilters: {String: AnyStruct},
-            resolverCapability: Capability<&{Resolver.ResolverPublic}>,
+            matcherCapability: Capability<&{OfferMatcher.OfferMatcherPublic}>,
             paymentHandlerCapability: Capability<&{PaymentHandler.PaymentHandlerPublic}>?,
             commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?
         ) {
             pre {
                 nftReceiverCapability.check(): "Can not borrow nftReceiverCapability"
-                resolverCapability.check(): "Can not borrow resolverCapability"
-                maximumOfferAmount == fundProvider.allowedWithdrawableBalance: "Mismatch in maximum offer amount and allowed withdrawable balance"
+                matcherCapability.check(): "Can not borrow matcherCapability"
+                maximumOfferAmount == paymentProviderGuard.allowedWithdrawableBalance: "Mismatch in maximum offer amount and allowed withdrawable balance"
             }
 
             if let handlerCap = paymentHandlerCapability {
@@ -349,9 +348,9 @@ pub contract Offers {
             }
             
             self.commissionReceivers = commissionReceivers
-            self.fundProvider = fundProvider
+            self.paymentProviderGuard = paymentProviderGuard
             self.nftReceiverCapability = nftReceiverCapability
-            self.resolverCapability = resolverCapability
+            self.matcherCapability = matcherCapability
 
             self.details = OfferDetails(
                 offerId: self.uuid,
@@ -360,7 +359,7 @@ pub contract Offers {
                 commissionAmount: commissionAmount,
                 offerCuts: offerCuts,
                 offerFilters: offerFilters,
-                paymentVaultType: fundProvider.getProviderType(),
+                paymentVaultType: paymentProviderGuard.getProviderType(),
             )
         }
 
@@ -382,9 +381,9 @@ pub contract Offers {
                 receiverCapability.check(): "Invalid receiver capability"
             }
 
-            let resolverCap = self.resolverCapability.borrow() ?? panic("Failed to borrow resolverCapability")
+            let resolverCap = self.matcherCapability.borrow() ?? panic("Failed to borrow matcherCapability")
             let nftReceiverCap = self.nftReceiverCapability.borrow() ?? panic("Failed to borrow nftReceiverCapibility")
-            let hasMeetingResolverCriteria = resolverCap.checkOfferResolver(
+            let hasMeetingMatcherCriteria = resolverCap.checkOfferMatches(
                 item: &item as &{NonFungibleToken.INFT, MetadataViews.Resolver},
                 offerFilters: self.details.offerFilters
             )
@@ -392,10 +391,10 @@ pub contract Offers {
             var paidOfferCuts: [OfferCut] = []
             var paidRoyalties: [FundsReceiverInfo] = []
 
-            assert(hasMeetingResolverCriteria, message: "Resolver failed, invalid NFT please check Offer criteria")
+            assert(hasMeetingMatcherCriteria, message: "OfferMatcher failed, invalid NFT please check Offer criteria")
 
             // Withdraw maximum offered amount by the prospective buyer.
-            let toBePaidVault <- self.fundProvider.withdraw()
+            let toBePaidVault <- self.paymentProviderGuard.withdraw()
 
             if self.details.commissionAmount > 0.0 {
                 // If commission recipient is nil, Throw panic.
@@ -506,11 +505,11 @@ pub contract Offers {
         /// Return the supported filter types
         ///
         pub fun getValidOfferFilterTypes(): {String: String} {
-            return self.resolverCapability.borrow()!.getValidOfferFilterTypes()
+            return self.matcherCapability.borrow()!.getValidOfferFilterTypes()
         }
 
         /// calcNetPaymentToSeller
-        /// Return the amount of fungible tokens will be received by the offeree
+        /// Calculates the amount of fungible tokens that would be received by the Seller for this offer
         ///
         pub fun calcNetPaymentToSeller(item: &{MetadataViews.Resolver}): UFix64 {
             var totalCutPayment: UFix64 = 0.0
@@ -544,9 +543,9 @@ pub contract Offers {
             return self.commissionReceivers
         }
 
-        /// Return the resolver capability
-        pub fun getOfferResolverCapability(): Capability<&{Resolver.ResolverPublic}> {
-            return self.resolverCapability
+        /// Return the matcher capability
+        pub fun getOfferMatcherCapability(): Capability<&{OfferMatcher.OfferMatcherPublic}> {
+            return self.matcherCapability
         }
 
         /// Return the payment handler capability
@@ -558,8 +557,8 @@ pub contract Offers {
         /// Checks whether the given item respect the provided offer or not.
         ///
         pub fun isGivenItemMatchesOffer(item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver}): Bool {
-            return  self.resolverCapability.check() ? 
-                    self.resolverCapability.borrow()!.checkOfferResolver(item: item, offerFilters: self.details.offerFilters) :
+            return  self.matcherCapability.check() ? 
+                    self.matcherCapability.borrow()!.checkOfferMatches(item: item, offerFilters: self.details.offerFilters) :
                     false
         }
 
@@ -598,14 +597,14 @@ pub contract Offers {
         /// Facilitates the creation of an Offer.
         ///
         pub fun createOffer(
-            fundProvider: FundProvider,
+            paymentProviderGuard: PaymentProviderGuard,
             nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             commissionAmount: UFix64,
             offerCuts: [Offers.OfferCut],
             offerFilters: {String: AnyStruct},
-            resolverCapability: Capability<&{Resolver.ResolverPublic}>,
+            matcherCapability: Capability<&{OfferMatcher.OfferMatcherPublic}>,
             paymentHandlerCapability: Capability<&{PaymentHandler.PaymentHandlerPublic}>?,
             commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?
         ): UInt64 
@@ -657,26 +656,26 @@ pub contract Offers {
         /// Facilitates the creation of Offer.
         ///
         pub fun createOffer(
-            fundProvider: FundProvider,
+            paymentProviderGuard: PaymentProviderGuard,
             nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>,
             nftType: Type,
             maximumOfferAmount: UFix64,
             commissionAmount: UFix64,
             offerCuts: [Offers.OfferCut],
             offerFilters: {String: AnyStruct},
-            resolverCapability: Capability<&{Resolver.ResolverPublic}>,
+            matcherCapability: Capability<&{OfferMatcher.OfferMatcherPublic}>,
             paymentHandlerCapability: Capability<&{PaymentHandler.PaymentHandlerPublic}>?,
             commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?
         ): UInt64 {
             let offer <- create Offer(
-                fundProvider: fundProvider,
+                paymentProviderGuard: paymentProviderGuard,
                 nftReceiverCapability: nftReceiverCapability,
                 nftType: nftType,
                 maximumOfferAmount: maximumOfferAmount,
                 commissionAmount: commissionAmount,
                 offerCuts: offerCuts,
                 offerFilters: offerFilters,
-                resolverCapability: resolverCapability,
+                matcherCapability: matcherCapability,
                 paymentHandlerCapability: paymentHandlerCapability,
                 commissionReceivers: commissionReceivers
             )
@@ -706,7 +705,7 @@ pub contract Offers {
                 offerFilterNames: offerFilters.keys,
                 commissionAmount: commissionAmount,
                 commissionReceivers: allowedCommissionReceivers,
-                paymentVaultType: fundProvider.getProviderType(),
+                paymentVaultType: paymentProviderGuard.getProviderType(),
                 offerCuts: Offers.convertIntoFundsReceiver(cuts: offerCuts)
             )
             return offerResourceID
@@ -771,7 +770,7 @@ pub contract Offers {
             }
             let offer <- self.offers.remove(key: offerId)!
             assert(!offer.getDetails().accepted, message: "Offer is not accepted, only admin can remove")
-            assert(offer.fundProvider.getProviderBalance() >= offer.fundProvider.allowedWithdrawableBalance, message: "Offer is not ghosted yet")
+            assert(offer.paymentProviderGuard.getProviderBalance() >= offer.paymentProviderGuard.allowedWithdrawableBalance, message: "Offer is not ghosted yet")
             destroy offer
         }
 

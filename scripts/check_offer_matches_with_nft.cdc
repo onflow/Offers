@@ -3,6 +3,17 @@ import NonFungibleToken from "../contracts/core/NonFungibleToken.cdc"
 import MetadataViews from "../contracts/core/MetadataViews.cdc"
 import ExampleNFT from "../contracts/core/ExampleNFT.cdc"
 
+/// This script tells whether the givein `nftId` matches the filter of the given `offerId`
+///
+/// # Params
+/// @param offerId ID of the offer corresponds to which `nftId` acceptance get checked
+/// @param offerCreator Address of the account which holds the offer resource
+/// @param nftId ID of the NFT, Which get checked corresponds to given `offerId`, Whether it matches the filter or not
+/// @param nftAccountOwner Owner of the given `nftId`
+///
+/// # Returns
+/// @return Boolean value, `True` if given `nftId` matches the given `offerId` filters, Otherwise return `False`
+///
 pub fun main(offerId: UInt64, offerCreator: Address, nftId: UInt64, nftAccountOwner: Address): Bool {
     let nftCollectionRef = getAccount(nftAccountOwner)
         .getCapability<&{ExampleNFT.ExampleNFTCollectionPublic}>(ExampleNFT.CollectionPublicPath)

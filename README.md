@@ -5,8 +5,7 @@
 For simplicity, we copy the Flow core contract into the project folder here. This is to mitigate program
 non-compilation since on-chain contracts may be updated at a future time. 
 
-Developers should not deploy any of the following as their contract addresses won't be recognized by the 
-eco-system standard on Flow. 
+Developers need not deploy the contracts listed below. Contract standards must reference the correct contract addresses on-chain. Cadence contract imports behave intuitively like imports in other languages; the imported type definitions become available at the runtime scope.
 
 * FungibleToken.cdc
 * ExampleNFT.cdc

@@ -1,7 +1,6 @@
 import Offers from "../contracts/Offers.cdc"
 
 /// This transaction installs the OpenOffers ressource in an account.
-
 transaction {
 
     prepare(acct: AuthAccount) {
