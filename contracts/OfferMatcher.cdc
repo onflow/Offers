@@ -3,6 +3,15 @@ import MetadataViews from "./core/MetadataViews.cdc"
 
 /// OfferMatcher
 ///
+/// Interface used to create different variants of Matcher, That can be used to match making
+/// with NFTs for a Offer
+///
+/// Developers or Marketplaces can build there custom matchers contract that implements the `OfferMatcher.OfferMatcherPublic`
+/// resource interface.
+/// 
+/// Example - Alice wants to buy an NFT whose `nftId` is 1 then Alice can create a filter i.e. {"nftId": "1"} and implements
+/// a custom matcher that validates whether provided NFT has ID equals to 1.
+///
 pub contract OfferMatcher {
     
     /// Public resource interface that defines a method signature for checkOfferMatches
