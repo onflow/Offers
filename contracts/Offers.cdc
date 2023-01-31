@@ -7,21 +7,26 @@ import Resolver from "./Resolver.cdc"
 
 /// Offers
 ///
-/// Contract holds the Offer resource and a public method to create them.
+/// It is a smart contract written in cadence language. The intent of writing the smart contract is to build
+/// the technology piece that would allow "prospective buyers" to show their intent to buy a digital asset,
+/// such as NFT, using any Fungible Token (FT hereof) as the settlement currency.
 ///
-/// Anyone interested in purchasing an asset such as NFT can create an offer resource and express
-/// their willingness to purchase the asset at the proposed price. Using the 'Resolver', the prospective buyer
-/// can also propose offers with different filters on asset metadata. The Resolver contract provides
-/// a generic resource to resolve the applied filter on the proposed offer.
+/// Throughout the contract, the term "prospective buyer" refers to the buyer who creates a `Offer` to purchase an NFT,
+/// whereas the term "seller" refers to the buyer who accepts the `Offer` or sells its NFT to the prospective buyer.
 ///
-/// If the asset supports 'MetadataViews.Royalty' the offer resource will also honour the royalties.
-/// The prospective buyer can set a different `OfferCut` to pay the platform fee or any other type of commission.
+/// Prospective buyers can specify the kind of NFT they want by using different NFT traits or NFT Ids as filters,
+/// which are provided as `offerFilters` during the offer creation process.  The `Resolver` contract,
+/// on the other hand, would be used to resolve those filters during the purchase or acceptance of the offer.
 ///
-/// NFT owners can keep an eye out for 'OfferAvailable' events for NFTs they own and check the Offer amount
-/// to determine whether or not to accept the offer.
+/// When a new offer is created, the contract fires the `OfferAvailable` event. Interested marketplaces or dApps
+/// can search the FVM logs for similar events and list the offer on their dashboards so that sellers can see available
+/// offers in the market. Marketplaces or dApps can earn a fixed commission amount set during the creation of an offer 
+/// to facilitate the purchase of an offer.
 ///
-/// Marketplaces and other aggregators can track 'OfferAvailable' events and display offers of interest to logged-in users.
-///
+/// To provide a revenue stream to the creators of digital assets, the `Offers` contract honours royalty if NFT 
+/// implements `MetadataView.RoyaltyView` and transfers respective royalties to royalty receivers during offer 
+/// purchase or acceptance. It also simplifies the payment of various service fees as `OfferCut`.
+///  
 pub contract Offers {
 
     /// Emitted when the `OpenOffers` resource gets destroyed.
