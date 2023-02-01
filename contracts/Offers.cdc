@@ -7,18 +7,18 @@ import OfferMatcher from "./OfferMatcher.cdc"
 
 /// Offers
 ///
-/// It is a smart contract written in cadence language. The intent of writing the smart contract is to build
-/// the technology piece that would allow "prospective buyers" to show their intent to buy a digital asset,
-/// such as NFT, using any Fungible Token (FT hereof) as the settlement currency.
+/// This is a smart contract written in the Cadence smart contract programming language. The intent of this
+/// smart contract is to allow "prospective buyers" to show their intent to buy a digital asset, such as an NFT,
+/// using any Fungible Token (FT hereof) as the settlement currency.
 ///
-/// Throughout the contract, the term "prospective buyer" refers to the buyer who creates a `Offer` to purchase an NFT,
+/// Throughout the contract, the term "prospective buyer" refers to the buyer who creates an `Offer` to purchase an NFT,
 /// whereas the term "seller" refers to the buyer who accepts the `Offer` or sells its NFT to the prospective buyer.
 ///
 /// Prospective buyers can specify the kind of NFT they want by using different NFT traits or NFT Ids as filters,
 /// which are provided as `offerFilters` during the offer creation process.  The `OfferMatcher` contract,
 /// on the other hand, would be used to resolve those filters during the purchase or acceptance of the offer.
 ///
-/// When a new offer is created, the contract fires the `OfferAvailable` event. Interested marketplaces or dApps
+/// When a new offer is created, the contract fires the `OfferStateUpdated` event. Interested marketplaces or dApps
 /// can search the FVM logs for similar events and list the offer on their dashboards so that sellers can see available
 /// offers in the market. Marketplaces or dApps can earn a fixed commission amount set during the creation of an offer 
 /// to facilitate the purchase of an offer.
@@ -29,34 +29,31 @@ import OfferMatcher from "./OfferMatcher.cdc"
 ///  
 pub contract Offers {
 
+    /// RevenutType
+    pub enum RevenueType : UInt8 {
+        pub case OFFER_CUT
+        pub case ROYALTY
+    }
+
+    /// OfferState
+    /// Enum tells the different state of `Offer` during its complete lifecycle
+    pub enum OfferState : UInt8 {
+        pub case AVAILABLE
+        pub case ACCEPTED
+        pub case DESTROYED
+    }
+
     /// Emitted when the `OpenOffers` resource gets destroyed.
     pub event OpenOffersDestroyed(openOffersResourceID: UInt64)
 
     /// Emitted when the `OpenOffers` resource gets created.
     pub event OpenOffersInitialized(OpenOffersResourceId: UInt64)
 
-    /// OfferAvailable
-    /// Emitted when the offer gets created by the prospective buyer
-    pub event OfferAvailable(
-        openOffersAddress: Address,
-        offerId: UInt64,
-        nftType: Type,
-        maximumOfferAmount: UFix64,
-        offerType: String,
-        offerFilterNames: [String],
-        commissionAmount: UFix64,
-        commissionReceivers: [Address]?,
-        paymentVaultType: Type,
-        offerCuts: [FundsReceiverInfo]
-    )
-
-    /// OfferCompleted
-    /// The Offer has been resolved. The offer has either been accepted
-    /// by offeree, or the offer has been removed and destroyed.
+    /// OfferStateUpdated
+    /// Emitted whenever the `Offer` moves into different state of its lifecycle
     ///
-    pub event OfferCompleted(
-        accepted: Bool,
-        acceptingAddress: Address?,
+    pub event OfferStateUpdated(
+        offerState: UInt8,
         offerAddress: Address,
         offerId: UInt64,
         nftType: Type,
@@ -64,22 +61,20 @@ pub contract Offers {
         offerType: String,
         offerFilterNames: [String],
         commissionAmount: UFix64,
-        commissionReceiver: Address?,
+        allowedCommissionReceivers: [Address]?,
         paymentVaultType: Type,
+        offerCuts: [ReceiverAndAmount],
         nftId: UInt64?,
-        paidOfferCuts: [FundsReceiverInfo],
-        paidRoyalties: [FundsReceiverInfo]
+        paidOfferCuts: [ReceiverAndAmount]?,
+        paidRoyalties: [ReceiverAndAmount]?,
+        acceptingAddress: Address?,
+        commissionReceiver: Address?,
     )
 
-    /// OfferCutNotPaid
-    /// During acceptance of the offer, when cut wouldn't get paid
+    /// UnpaidRevenueSplit
+    /// During acceptance of the offer, when revenue wouldn't get paid
     ///
-    pub event OfferCutNotPaid(to: Address, amount: UFix64)
-
-    /// RoyaltyNotPaid
-    /// During acceptance of the offer, when royalty wouldn't get paid
-    ///
-    pub event RoyaltyNotPaid(to: Address, amount: UFix64)
+    pub event UnpaidRevenueSplit(to: Address, amount: UFix64, revenueType: UInt8)
 
     /// OpenOffersStoragePath
     /// The location in storage that a OpenOffers resource should be located.
@@ -97,11 +92,11 @@ pub contract Offers {
     /// The default payment handler capability used to settle payment during offer acceptance
     pub let DefaultPaymentHandlerCap: Capability<&{PaymentHandler.PaymentHandlerPublic}>
 
-    /// FundsReceiverInfo
+    /// ReceiverAndAmount
     /// Datatype to represent the receiver of funds in terms of `receiver` address
     /// which actually receive funds and `amount` represents the number of FungibleTokens
     /// received.
-    pub struct FundsReceiverInfo {
+    pub struct ReceiverAndAmount {
         /// The receiver for the payment.
         /// To support event emission, address is preferred over capability.
         pub let receiver: Address
@@ -120,7 +115,7 @@ pub contract Offers {
     /// PaymentProviderGuard
     /// Provides basic spend control guard around the enclosed payment provider capability, set using `allowedWithdrawableBalance`
     pub struct PaymentProviderGuard {
-        /// Holds the provider capability, It get consume when funds are withdrawn to pay for the NFT purchase.
+        /// Holds the provider capability, It is consumed when funds are withdrawn to pay for the NFT purchase.
         access(self) let providerCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
         /// Maximum funds can be withdrawn from the provided capability.
         pub let allowedWithdrawableBalance: UFix64
@@ -182,9 +177,9 @@ pub contract Offers {
             self.amount = amount
         }
 
-        /// Allow to converts the `OfferCut` into `FundsReceiverInfo`.
-        pub fun into(): FundsReceiverInfo {
-            return FundsReceiverInfo(
+        /// Allow to converts the `OfferCut` into `ReceiverAndAmount`.
+        pub fun into(): ReceiverAndAmount {
+            return ReceiverAndAmount(
                 receiver: self.receiver.borrow()!.owner!.address,
                 amount: self.amount
             )
@@ -209,7 +204,7 @@ pub contract Offers {
         pub let offerCuts: [OfferCut]
         /// Used to hold Offer metadata and offer type information
         pub let offerFilters: {String: AnyStruct}
-        /// Commission provided when offer get consumed
+        /// Commission provided when offer gets consumed
         pub let commissionAmount: UFix64
 
         /// setToAccepted
@@ -281,10 +276,10 @@ pub contract Offers {
         ///
         pub fun getValidOfferFilterTypes(): {String: String}
 
-        /// isGivenItemMatchesOffer
+        /// doesGivenItemMatchOffer
         /// Checks whether the given item respect the provided offer or not.
         ///
-        pub fun isGivenItemMatchesOffer(item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver}): Bool
+        pub fun doesGivenItemMatchOffer(item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver}): Bool
 
         /// getAllowedCommissionReceivers
         /// Fetches the allowed marketplaces capabilities or commission receivers.
@@ -389,7 +384,7 @@ pub contract Offers {
             )
 
             var paidOfferCuts: [OfferCut] = []
-            var paidRoyalties: [FundsReceiverInfo] = []
+            var paidRoyalties: [ReceiverAndAmount] = []
 
             assert(hasMeetingMatcherCriteria, message: "OfferMatcher failed, invalid NFT please check Offer criteria")
 
@@ -437,7 +432,7 @@ pub contract Offers {
                         paidOfferCuts.append(cut)
                     } else {
                         // Emit Event
-                        emit OfferCutNotPaid(to: cut.receiver.address, amount: cut.amount)
+                        emit UnpaidRevenueSplit(to: cut.receiver.address, amount: cut.amount, revenueType: RevenueType.OFFER_CUT.rawValue)
                     }
                     
                 }
@@ -456,10 +451,10 @@ pub contract Offers {
                         if self.paymentHandlerCapability.borrow()!.checkValidVaultType(receiverCap: royalty.receiver, allowedVaultType: self.details.paymentVaultType) {
                             let royaltyPayment <- toBePaidVault.withdraw(amount: royaltyAmount)
                             beneficiary.deposit(from: <- royaltyPayment)
-                            paidRoyalties.append(FundsReceiverInfo(receiver: royalty.receiver.address, amount: royaltyAmount))
+                            paidRoyalties.append(ReceiverAndAmount(receiver: royalty.receiver.address, amount: royaltyAmount))
                         } else {
                             // Emit Event
-                            emit RoyaltyNotPaid(to: royalty.receiver.address, amount: royaltyAmount)
+                            emit UnpaidRevenueSplit(to: royalty.receiver.address, amount: royaltyAmount, revenueType: RevenueType.ROYALTY.rawValue)
                         }
                     }
                 }
@@ -476,9 +471,8 @@ pub contract Offers {
             // Desposit the asset to the prospective buyer.
             nftReceiverCap.deposit(token: <- (item as! @NonFungibleToken.NFT))
 
-            emit OfferCompleted(
-                accepted: self.details.accepted,
-                acceptingAddress: receiverCapability.address,
+            emit OfferStateUpdated(
+                offerState: OfferState.ACCEPTED.rawValue,
                 offerAddress: self.nftReceiverCapability.address,
                 offerId: self.details.offerId,
                 nftType: self.details.nftType,
@@ -486,11 +480,14 @@ pub contract Offers {
                 offerType: self.details.offerFilters["_type"] as! String? ?? "unknown",
                 offerFilterNames: self.details.offerFilters.keys,
                 commissionAmount: self.details.commissionAmount,
-                commissionReceiver: self.details.commissionAmount != 0.0 ? commissionRecipient!.address : nil,
+                allowedCommissionReceivers: Offers.getCommissionReceiverAddresses(commissionReceivers: self.commissionReceivers),
                 paymentVaultType: self.details.paymentVaultType,
+                offerCuts: Offers.convertIntoReceiverAndAmount(cuts: self.details.offerCuts),
                 nftId: nftId,
-                paidOfferCuts: Offers.convertIntoFundsReceiver(cuts: paidOfferCuts),
-                paidRoyalties: paidRoyalties
+                paidOfferCuts: Offers.convertIntoReceiverAndAmount(cuts: paidOfferCuts),
+                paidRoyalties: paidRoyalties,
+                acceptingAddress: receiverCapability.address,
+                commissionReceiver: self.details.commissionAmount != 0.0 ? commissionRecipient!.address : nil
             )
         }
 
@@ -553,10 +550,10 @@ pub contract Offers {
             return self.paymentHandlerCapability
         }
 
-        /// isGivenItemMatchesOffer
-        /// Checks whether the given item respect the provided offer or not.
+        /// doesGivenItemMatchOffer
+        /// Checks whether the given item fulfills the provided offer or not.
         ///
-        pub fun isGivenItemMatchesOffer(item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver}): Bool {
+        pub fun doesGivenItemMatchOffer(item: &AnyResource{NonFungibleToken.INFT, MetadataViews.Resolver}): Bool {
             return  self.matcherCapability.check() ? 
                     self.matcherCapability.borrow()!.checkOfferMatches(item: item, offerFilters: self.details.offerFilters) :
                     false
@@ -564,9 +561,8 @@ pub contract Offers {
 
         destroy() {
             if !self.details.accepted {
-                emit OfferCompleted(
-                    accepted: self.details.accepted,
-                    acceptingAddress: nil,
+                emit OfferStateUpdated(
+                    offerState: OfferState.DESTROYED.rawValue,
                     offerAddress: self.nftReceiverCapability.address,
                     offerId: self.details.offerId,
                     nftType: self.details.nftType,
@@ -574,11 +570,14 @@ pub contract Offers {
                     offerType: self.details.offerFilters["_type"] as! String? ?? "unknown",
                     offerFilterNames: self.details.offerFilters.keys,
                     commissionAmount: self.details.commissionAmount,
-                    commissionReceiver: nil,
+                    allowedCommissionReceivers: Offers.getCommissionReceiverAddresses(commissionReceivers: self.commissionReceivers),
                     paymentVaultType: self.details.paymentVaultType,
+                    offerCuts: Offers.convertIntoReceiverAndAmount(cuts: self.details.offerCuts),
                     nftId: nil,
-                    paidOfferCuts: [],
-                    paidRoyalties: []
+                    paidOfferCuts: nil,
+                    paidRoyalties: nil,
+                    acceptingAddress: nil,
+                    commissionReceiver: nil
                 )
             }
         }
@@ -683,30 +682,25 @@ pub contract Offers {
             let offerResourceID = offer.uuid
             // Add the new offer to the dictionary.
             self.offers[offerResourceID] <-! offer
-
-            // Scraping addresses from the capabilities to emit in the event.
-            var allowedCommissionReceivers : [Address]? = nil
-            if let allowedReceivers = commissionReceivers {
-                // Small hack here to make `allowedCommissionReceivers` variable compatible to
-                // array properties.
-                allowedCommissionReceivers = []
-                for receiver in allowedReceivers {
-                    allowedCommissionReceivers!.append(receiver.address)
-                }
-            }
             
             // Emit event
-            emit OfferAvailable(
-                openOffersAddress: self.owner?.address!,
+            emit OfferStateUpdated(
+                offerState: OfferState.AVAILABLE.rawValue,
+                offerAddress: self.owner?.address!,
                 offerId: offerResourceID,
                 nftType: nftType,
                 maximumOfferAmount: maximumOfferAmount,
                 offerType: offerFilters["_type"] as! String? ?? "unknown",
                 offerFilterNames: offerFilters.keys,
                 commissionAmount: commissionAmount,
-                commissionReceivers: allowedCommissionReceivers,
+                allowedCommissionReceivers: Offers.getCommissionReceiverAddresses(commissionReceivers: commissionReceivers),
                 paymentVaultType: paymentProviderGuard.getProviderType(),
-                offerCuts: Offers.convertIntoFundsReceiver(cuts: offerCuts)
+                offerCuts: Offers.convertIntoReceiverAndAmount(cuts: offerCuts),
+                nftId: nil,
+                paidOfferCuts: nil,
+                paidRoyalties: nil,
+                acceptingAddress: nil,
+                commissionReceiver: nil,
             )
             return offerResourceID
         }
@@ -799,14 +793,27 @@ pub contract Offers {
         return <-create OpenOffers()
     }
 
-    /// convertIntoFundsReceiver
-    /// Helper function to convert the `OfferCut` data type to `FundsReceiverInfo`.
-    pub fun convertIntoFundsReceiver(cuts: [OfferCut]): [FundsReceiverInfo] {
-        var receivers: [FundsReceiverInfo] = []
+    /// convertIntoReceiverAndAmount
+    /// Helper function to convert the `OfferCut` data type to `ReceiverAndAmount`.
+    pub fun convertIntoReceiverAndAmount(cuts: [OfferCut]): [ReceiverAndAmount] {
+        var receivers: [ReceiverAndAmount] = []
         for cut in cuts {
             receivers.append(cut.into())
         }
         return receivers
+    }
+
+    access(contract) fun getCommissionReceiverAddresses(commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?) : [Address]? {
+        var allowedCommissionReceivers : [Address]? = nil
+        if let allowedReceivers = commissionReceivers {
+            // Small hack here to make `allowedCommissionReceivers` variable compatible to
+            // array properties.
+            allowedCommissionReceivers = []
+            for receiver in allowedReceivers {
+                allowedCommissionReceivers!.append(receiver.borrow()!.owner!.address)
+            }
+        }
+        return allowedCommissionReceivers
     }
 
     init () {
@@ -818,8 +825,8 @@ pub contract Offers {
             target: DefaultPaymentHandler.DefaultPaymentHandlerStoragePath
         )
         self.DefaultPaymentHandlerCap = self.account.getCapability<&{PaymentHandler.PaymentHandlerPublic}>(PaymentHandler.getPaymentHandlerPublicPath())
-        self.OpenOffersStoragePath = /storage/OpenMarketplaceOffers
-        self.OpenOffersPublicPath = /public/OpenMarketplaceOffers
+        self.OpenOffersStoragePath = /storage/FlowOpenMarketOffersStandard
+        self.OpenOffersPublicPath = /public/FlowOpenMarketOffersStandard
         self.FungibleTokenProviderVaultPath = /private/OffersFungibleTokenProviderVault
     }
 }

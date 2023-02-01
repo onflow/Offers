@@ -2,6 +2,15 @@ import PaymentHandler from "./PaymentHandler.cdc"
 import FungibleToken from "./core/FungibleToken.cdc"
 import FungibleTokenSwitchboard from "./core/FungibleTokenSwitchboard.cdc"
 
+/// DefaultPaymentHandler
+///
+/// This contract is a "DEFAULT" payment handler, which is used in the `Offers` contract to 
+/// resolve payments during offer acceptance. The `Offers` account will own the `DefaultHandler` resource, 
+/// which will be used to validate the vault type of the payment receivers, If no explicit payment handler
+/// is provided by the prospective buyer.
+/// 
+/// `DefaultHandler` would be useful to if marketplaces or third party applications only allows given `allowedVaultType`
+/// receiver vault or `FungibleTokenSwitchboard.Switchboard` resource.
 pub contract DefaultPaymentHandler {
 
     pub let DefaultPaymentHandlerStoragePath: StoragePath
@@ -32,7 +41,7 @@ pub contract DefaultPaymentHandler {
     }
 
     init() {
-        self.DefaultPaymentHandlerStoragePath = /storage/DefaultPaymentHandler
+        self.DefaultPaymentHandlerStoragePath = /storage/FlowOpenMarketPlaceDefaultPaymentHandler
     }
 
 }

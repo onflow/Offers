@@ -24,5 +24,5 @@ pub fun main(offerId: UInt64, offerCreator: Address, nftId: UInt64, nftAccountOw
         .getCapability<&{Offers.OpenOffersPublic}>(Offers.OpenOffersPublicPath)
         .borrow() 
         ?? panic("Unable to borrow offer creator's public capability")
-    return offerPublicCap.borrowOffer(offerId: offerId)!.isGivenItemMatchesOffer(item: itemRef)
+    return offerPublicCap.borrowOffer(offerId: offerId)!.doesGivenItemMatchOffer(item: itemRef)
 }

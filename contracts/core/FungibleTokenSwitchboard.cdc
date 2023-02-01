@@ -1,3 +1,7 @@
+/// CONTRACT PROVIDED HERE IS NOT FOR DEPLOYMENT. Cadence contract standards are imported like libraries in 
+/// traditional software meaning that you should import the correct contract. This copy of the standard is provided 
+/// to prevent project compilation issues since deployed contracts slowly evolve over time. 
+
 import FungibleToken from "./FungibleToken.cdc"
 
 /// The contract that allows an account to receive payments in multiple fungible

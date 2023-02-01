@@ -1,3 +1,8 @@
+/// CONTRACT PROVIDED HERE IS NOT FOR DEPLOYMENT. Cadence contract standards are imported like libraries in 
+/// traditional software meaning that you should import the correct contract. This copy of the standard is provided 
+/// to prevent project compilation issues since deployed contracts slowly evolve over time. 
+/// https://developers.flow.com/flow/core-contracts/fungible-token
+
 /**
 
 # The Flow Fungible Token standard

@@ -2,6 +2,16 @@ import OfferMatcher from "./OfferMatcher.cdc"
 import NonFungibleToken from "./core/NonFungibleToken.cdc"
 import MetadataViews from "./core/MetadataViews.cdc"
 
+/// ExampleOfferMatcher
+///
+/// This contract is just an example implementation of the `OfferMatcher` contract.
+/// The idea behind to develop this is to showcase the design strength and how much
+/// useful it can be if marketplaces or third party applications develop their usecase-specific
+/// implementation of the `OfferMatcher.OfferMatcherPublic` resource.
+///
+/// It allows following - {"nftId": "1"} kind of filter for an offer. It only checks whether
+/// given `item` has `nftId` equals to the filter value i.e `offerFilters["nftId"]`
+///
 pub contract ExampleOfferMatcher {
 
     pub let ExampleOpenOfferMatcherStoragePath: StoragePath
