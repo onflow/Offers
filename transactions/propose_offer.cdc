@@ -28,7 +28,7 @@ transaction(
     commissionAmount: UFix64,
     commissionReceivers: [Address]?
 ) {
-    let offerManager: &Offers.OpenOffers{Offers.OfferManager}
+    let openOffersManager: &Offers.OpenOffers
     let providerVaultCap: Capability<&{FungibleToken.Provider, FungibleToken.Balance}>
     let nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
     let matcherCap: Capability<&{OfferMatcher.OfferMatcherPublic}>
@@ -38,8 +38,8 @@ transaction(
     prepare(acct: AuthAccount) {
         self.offerCuts = []
         self.commissionRecevs = []
-        self.offerManager = acct.borrow<&Offers.OpenOffers{Offers.OfferManager}>(from: Offers.OpenOffersStoragePath)
-            ?? panic("Given account does not possess OfferManager resource")
+        self.openOffersManager = acct.borrow<&Offers.OpenOffers>(from: Offers.OpenOffersStoragePath)
+            ?? panic("Given account does not possess OpenOffers resource")
 
         // Check whether the account contains the private capability.
         if acct.getLinkTarget(Offers.FungibleTokenProviderVaultPath) == nil {
@@ -89,7 +89,7 @@ transaction(
     execute {
         let paymentProviderGuard = Offers.PaymentProviderGuard(cap: self.providerVaultCap, withdrawableBalance: maximumOfferAmount)
 
-        self.offerManager.createOffer(
+        self.openOffersManager.createOffer(
             paymentProviderGuard: paymentProviderGuard,
             nftReceiverCapability: self.nftReceiverCap,
             nftType: Type<@ExampleNFT.NFT>(),

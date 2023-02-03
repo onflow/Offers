@@ -131,7 +131,7 @@ pub fun testFailToCreateOfferBecauseAccountDoesNotHaveOpenOffersResource() {
         fakeOfferee.address,
         2.0,
         nil,
-        "Given account does not possess OfferManager resource",
+        "Given account does not possess OpenOffers resource",
         ErrorType.TX_PANIC
     )
 }

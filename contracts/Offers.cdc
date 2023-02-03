@@ -583,44 +583,13 @@ pub contract Offers {
         }
     }
 
-    /// To create offers to buy NFTs, One should own
-    /// `OfferManager` resource to create and manage the
-    /// different offers created by themselves.
-    /// Example - If Alice intends to become and prospective buyer then
-    /// Alice should hold the OfferManager resource in her account
-    /// and using the offerManager resource Alice can create different
-    /// offers and manage them like remove an offer.
-    pub resource interface OfferManager {
-
-        /// createOffer
-        /// Facilitates the creation of an Offer.
-        ///
-        pub fun createOffer(
-            paymentProviderGuard: PaymentProviderGuard,
-            nftReceiverCapability: Capability<&{NonFungibleToken.Receiver}>,
-            nftType: Type,
-            maximumOfferAmount: UFix64,
-            commissionAmount: UFix64,
-            offerCuts: [Offers.OfferCut],
-            offerFilters: {String: AnyStruct},
-            matcherCapability: Capability<&{OfferMatcher.OfferMatcherPublic}>,
-            paymentHandlerCapability: Capability<&{PaymentHandler.PaymentHandlerPublic}>?,
-            commissionReceivers: [Capability<&{FungibleToken.Receiver}>]?
-        ): UInt64 
-        
-        /// removeOffer
-        /// Allow the OfferManager resource owner to remove the proposed offer.
-        ///
-        pub fun removeOffer(offerId: UInt64)
-    }
-
     /// OpenOffersPublic
-    /// An interface providing a useful public interface to interact with OfferManager.
+    /// An interface providing a useful public interface to interact with OpenOffers.
     ///
     pub resource interface OpenOffersPublic {
 
         /// getOfferIds
-        /// Get a list of Offer ids created by the prospective buyer and hold by the OfferManager resource.
+        /// Get a list of Offer ids created by the prospective buyer and hold by the OpenOffers resource.
         ///
         pub fun getOfferIds(): [UInt64]
 
@@ -646,8 +615,8 @@ pub contract Offers {
         pub fun getAllOffersDetails(): {UInt64: Offers.OfferDetails}
     }
 
-    /// The concrete OpenOffers Resource implementing OfferManager and OpenOffersPublic resource interfaces.
-    pub resource OpenOffers: OfferManager, OpenOffersPublic {
+    /// The concrete OpenOffers Resource implementing OpenOffersPublic resource interface.
+    pub resource OpenOffers: OpenOffersPublic {
         /// Dictionary of Offers uuids to Offer resources.
         access(contract) var offers: @{UInt64: Offer}
 
