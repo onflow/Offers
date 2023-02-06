@@ -755,6 +755,45 @@ pub contract Offers {
         }
     }
 
+    pub struct NFTTradeProposal {
+        pub let id: UInt64?
+        pub let traits: MetadataViews.Traits?
+
+        init(id: UInt64?, traits: MetadataViews.Traits?){
+            self.id = id
+            self.traits = traits
+        }
+    }
+
+    pub fun tradeMatchesNFT (proposal: NFTTradeProposal, nftID: UInt64, nftResolver: &{MetadataViews.Resolver}): Bool{
+        var match: Bool = false
+        var nftView = MetadataViews.getNFTView(id: nftID, viewResolver: nftResolver)
+
+        // If the proposal specifies an id that matches the nft
+        if (proposal.id != nil && proposal.id == nftView.id){
+            // and specifies a set of traits that are a subset of the nft traits
+            if (proposal.traits != nil && self.isTraitsSubSet(proposal.traits!, nftView.traits!)){
+
+            }
+        }
+
+        return match
+    }
+
+    pub fun isTraitsSubSet(_ proposal: MetadataViews.Traits, _ nftTraits: MetadataViews.Traits): Bool {
+        var isSubSet = false
+
+        for proposalTrait in proposal.traits {
+            for nftTrait in nftTraits.traits {
+
+            }
+        }
+        return isSubSet
+    }
+
+
+
+
     /// createOpenOffers
     /// Make creating an OpenOffers publicly accessible.
     ///

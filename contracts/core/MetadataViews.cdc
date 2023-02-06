@@ -673,6 +673,10 @@ pub contract MetadataViews {
         // This is optional because not all attributes need to contribute to the NFT's rarity.
         pub let rarity: Rarity?
 
+        pub fun equals (): Bool {
+            
+        }
+
         init(name: String, value: AnyStruct, displayType: String?, rarity: Rarity?) {
             self.name = name
             self.value = value
