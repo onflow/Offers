@@ -1,3 +1,3 @@
 #! /bin/bash
 
-flow test -l "info,error" ./lib/cadence/test/Offers.cdc
+flow test --cover -l "info,error" ./lib/cadence/test/Offers.cdc
